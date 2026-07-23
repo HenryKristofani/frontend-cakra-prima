@@ -46,10 +46,10 @@ export function NewTransactionRow({ onAdd }: { onAdd: (data: Omit<Transaction, '
          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" />
       </td>
       <td className="px-6 py-3">
-         <input type="text" value={company} onChange={e => setCompany(e.target.value)} placeholder="Company..." className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" />
+         <input type="text" value={company} onChange={e => setCompany(e.target.value)} placeholder="Company..." className="w-full min-w-[150px] bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" />
       </td>
       <td className="px-6 py-3">
-         <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description..." className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" />
+         <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description..." className="w-full min-w-[200px] bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50" />
       </td>
       <td className="px-6 py-3">
          <select value={payment} onChange={e => setPayment(e.target.value as "cash" | "rek")} className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50">
@@ -64,7 +64,7 @@ export function NewTransactionRow({ onAdd }: { onAdd: (data: Omit<Transaction, '
            onChange={(e) => setIncome(e.target.value)} 
            disabled={expense.length > 0} 
            placeholder="Income..." 
-           className="w-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-emerald-700 dark:text-emerald-400 placeholder:text-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed" 
+           className="w-full min-w-[130px] bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-emerald-700 dark:text-emerald-400 placeholder:text-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed" 
          />
       </td>
       <td className="px-6 py-3">
@@ -74,7 +74,7 @@ export function NewTransactionRow({ onAdd }: { onAdd: (data: Omit<Transaction, '
            onChange={(e) => setExpense(e.target.value)} 
            disabled={income.length > 0} 
            placeholder="Expense..." 
-           className="w-full bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-rose-700 dark:text-rose-400 placeholder:text-rose-600/40 disabled:opacity-50 disabled:cursor-not-allowed" 
+           className="w-full min-w-[130px] bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-rose-700 dark:text-rose-400 placeholder:text-rose-600/40 disabled:opacity-50 disabled:cursor-not-allowed" 
          />
       </td>
       <td className="px-6 py-3 text-xs text-muted-foreground text-center">-</td>

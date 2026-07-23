@@ -1,10 +1,12 @@
 "use client";
 
-import { Search, Filter, Loader2 } from "lucide-react";
-import { PaginatedResponse, Transaction } from "@/types/transaction";
+import { Search, Filter, Loader2, FileSpreadsheet } from "lucide-react";
+import { useState } from "react";
+import { Transaction } from "@/types/transaction";
 import { NewTransactionRow } from "./NewTransactionRow";
 import { EditableTransactionRow } from "./EditableTransactionRow";
-import { formatCurrency } from "@/utils/formatters";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -30,14 +32,41 @@ export function TransactionTable({
   deleteTransaction
 }: TransactionTableProps) {
   
-  // Calculate running balance naively for the visible page (assuming newest first)
-  // To do this perfectly, the backend should return the running balance per row.
-  // We'll compute it here relatively just to show the UI effect the user wants to test.
-  let currentBalance = 0; // We'd need actual starting balance here for accurate Rekap Saldo
+  const [exportYear, setExportYear] = useState<string>(new Date().getFullYear().toString());
+  const [exportMonth, setExportMonth] = useState<string>((new Date().getMonth() + 1).toString());
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const params = new URLSearchParams();
+      if (exportYear) params.append('year', exportYear);
+      if (exportMonth) params.append('month', exportMonth);
+      const url = `${API_BASE}/transactions-export?${params.toString()}`;
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'laporan-arus-kas.xlsx';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const months = [
+    { label: 'Semua Bulan', value: '' },
+    ...Array.from({ length: 12 }, (_, i) => ({
+      label: new Date(2000, i).toLocaleString('id-ID', { month: 'long' }),
+      value: (i + 1).toString(),
+    }))
+  ];
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
   
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-      <div className="p-4 border-b border-border flex flex-col md:flex-row gap-4 justify-between items-center bg-muted/30">
+      <div className="p-4 border-b border-border flex flex-col md:flex-row gap-3 justify-between items-center bg-muted/30">
         <div className="relative w-full md:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
@@ -46,10 +75,30 @@ export function TransactionTable({
             className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
           />
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 border border-border bg-background rounded-lg text-sm font-medium hover:bg-muted transition-colors whitespace-nowrap text-foreground">
-          <Filter className="w-4 h-4" />
-          Filter
-        </button>
+        <div className="flex items-center gap-2 flex-wrap justify-end">
+          <select
+            value={exportMonth}
+            onChange={e => setExportMonth(e.target.value)}
+            className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
+          >
+            {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+          <select
+            value={exportYear}
+            onChange={e => setExportYear(e.target.value)}
+            className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
+          >
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap disabled:opacity-60"
+          >
+            {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+            Export Excel
+          </button>
+        </div>
       </div>
       
       <div className="overflow-x-auto relative min-h-[200px]">

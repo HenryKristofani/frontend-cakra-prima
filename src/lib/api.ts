@@ -38,5 +38,10 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
     throw new Error(errorData.message || `API request failed: ${response.status}`);
   }
 
-  return response.json();
+  if (response.status === 204) {
+    return {} as T;
+  }
+
+  const text = await response.text();
+  return text ? JSON.parse(text) : ({} as T);
 }

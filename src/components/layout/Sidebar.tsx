@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Wallet, Settings, LogOut, Package } from "lucide-react";
+import { LayoutDashboard, Wallet, Settings, LogOut, Package, CreditCard } from "lucide-react";
 
 export function Sidebar({ isOpen }: { isOpen: boolean }) {
   const pathname = usePathname();
@@ -10,6 +10,7 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Kas Kantor", href: "/dashboard/kas", icon: Wallet },
+    { name: "Hutang", href: "/dashboard/hutang", icon: CreditCard },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 

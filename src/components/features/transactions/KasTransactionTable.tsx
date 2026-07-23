@@ -2,7 +2,8 @@
 
 import { Search, Filter, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { transactionService, TransactionData } from "@/lib/services/transactionService";
+import { transactionService } from "@/lib/services/transactionService";
+import { Transaction } from "@/types/transaction";
 import { NewTransactionRow } from "./NewTransactionRow";
 import { EditableTransactionRow } from "./EditableTransactionRow";
 
@@ -16,7 +17,7 @@ export function KasTransactionTable() {
   const fetchTransactions = async (p: number = 1) => {
     setIsLoading(true);
     try {
-      const data = await transactionService.getTransactions(p);
+      const data = await transactionService.getTransactions({ page: p });
       setTransactions(data.data);
       setPage(data.current_page);
       setLastPage(data.last_page);
@@ -32,14 +33,19 @@ export function KasTransactionTable() {
     fetchTransactions(page);
   }, [page]);
 
-  const handleAdd = async (data: TransactionData) => {
+  const handleAdd = async (data: Omit<Transaction, "id" | "created_at" | "updated_at">) => {
     await transactionService.createTransaction(data);
     fetchTransactions(1); 
   };
 
-  const handleUpdate = async (id: number, data: TransactionData) => {
+  const handleUpdate = async (id: number, data: Partial<Omit<Transaction, "id" | "created_at" | "updated_at">>) => {
     await transactionService.updateTransaction(id, data);
     fetchTransactions(page); 
+  };
+
+  const handleDelete = async (id: number) => {
+    await transactionService.deleteTransaction(id);
+    fetchTransactions(page);
   };
 
   return (
@@ -82,7 +88,7 @@ export function KasTransactionTable() {
           <tbody className="divide-y divide-border">
             <NewTransactionRow onAdd={handleAdd} />
             {transactions.map((trx) => (
-              <EditableTransactionRow key={trx.id} trx={trx} onUpdate={handleUpdate} />
+              <EditableTransactionRow key={trx.id} trx={trx} onUpdate={handleUpdate} onDelete={handleDelete} />
             ))}
           </tbody>
         </table>

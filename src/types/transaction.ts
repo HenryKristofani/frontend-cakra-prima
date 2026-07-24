@@ -1,12 +1,32 @@
+export interface Project {
+  id: number;
+  name: string;
+  status?: string;
+}
+
+export interface Account {
+  id: number;
+  name: string;
+  type: string;
+  initial_balance: number;
+  current_balance?: number;
+}
+
 export interface Transaction {
   id: number;
   date: string;
-  company: string;
+  account_id?: number | null;
+  project_id?: number | null;
+  user_id?: number | null;
+  company?: string | null;
   description: string;
   payment_method: 'cash' | 'rek';
   income: number;
   expense: number;
   rekap_saldo?: number;
+  account?: Account | null;
+  project?: Project | null;
+  user?: { id: number; name: string } | null;
   created_at?: string;
   updated_at?: string;
 }

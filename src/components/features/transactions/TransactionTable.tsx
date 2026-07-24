@@ -1,8 +1,8 @@
 "use client";
 
-import { Search, Filter, Loader2, FileSpreadsheet } from "lucide-react";
-import { useState } from "react";
-import { Transaction } from "@/types/transaction";
+import { Search, Loader2, FileSpreadsheet } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Transaction, Project, Account } from "@/types/transaction";
 import { NewTransactionRow } from "./NewTransactionRow";
 import { EditableTransactionRow } from "./EditableTransactionRow";
 
@@ -17,7 +17,7 @@ interface TransactionTableProps {
   };
   isLoading: boolean;
   changePage: (page: number) => void;
-  addTransaction: (data: Omit<Transaction, 'id'>) => Promise<void>;
+  addTransaction: (data: Omit<Transaction, "id">) => Promise<void>;
   updateTransaction: (id: number, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: number) => Promise<void>;
 }
@@ -29,23 +29,37 @@ export function TransactionTable({
   changePage,
   addTransaction,
   updateTransaction,
-  deleteTransaction
+  deleteTransaction,
 }: TransactionTableProps) {
-  
   const [exportYear, setExportYear] = useState<string>(new Date().getFullYear().toString());
   const [exportMonth, setExportMonth] = useState<string>((new Date().getMonth() + 1).toString());
   const [isExporting, setIsExporting] = useState(false);
+
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE}/projects`)
+      .then((res) => res.json())
+      .then((data) => setProjects(Array.isArray(data) ? data : []))
+      .catch((e) => console.error("Failed to load projects", e));
+
+    fetch(`${API_BASE}/accounts`)
+      .then((res) => res.json())
+      .then((data) => setAccounts(Array.isArray(data) ? data : []))
+      .catch((e) => console.error("Failed to load accounts", e));
+  }, []);
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
       const params = new URLSearchParams();
-      if (exportYear) params.append('year', exportYear);
-      if (exportMonth) params.append('month', exportMonth);
+      if (exportYear) params.append("year", exportYear);
+      if (exportMonth) params.append("month", exportMonth);
       const url = `${API_BASE}/transactions-export?${params.toString()}`;
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = 'laporan-arus-kas.xlsx';
+      a.download = "laporan-arus-kas.xlsx";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -55,15 +69,15 @@ export function TransactionTable({
   };
 
   const months = [
-    { label: 'Semua Bulan', value: '' },
+    { label: "Semua Bulan", value: "" },
     ...Array.from({ length: 12 }, (_, i) => ({
-      label: new Date(2000, i).toLocaleString('id-ID', { month: 'long' }),
+      label: new Date(2000, i).toLocaleString("id-ID", { month: "long" }),
       value: (i + 1).toString(),
-    }))
+    })),
   ];
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
-  
+
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
       <div className="p-4 border-b border-border flex flex-col md:flex-row gap-3 justify-between items-center bg-muted/30">
@@ -71,24 +85,32 @@ export function TransactionTable({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
-            placeholder="Search transactions..."
+            placeholder="Cari transaksi..."
             className="w-full bg-background border border-border rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
           <select
             value={exportMonth}
-            onChange={e => setExportMonth(e.target.value)}
+            onChange={(e) => setExportMonth(e.target.value)}
             className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
           >
-            {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            {months.map((m) => (
+              <option key={m.value} value={m.value}>
+                {m.label}
+              </option>
+            ))}
           </select>
           <select
             value={exportYear}
-            onChange={e => setExportYear(e.target.value)}
+            onChange={(e) => setExportYear(e.target.value)}
             className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
           >
-            {years.map(y => <option key={y} value={y}>{y}</option>)}
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
           </select>
           <button
             onClick={handleExport}
@@ -100,7 +122,7 @@ export function TransactionTable({
           </button>
         </div>
       </div>
-      
+
       <div className="overflow-x-auto relative min-h-[200px]">
         {isLoading && (
           <div className="absolute inset-0 z-10 bg-background/50 flex items-center justify-center backdrop-blur-sm">
@@ -110,44 +132,51 @@ export function TransactionTable({
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
             <tr>
-              <th className="px-6 py-4 font-medium">Transaction ID</th>
-              <th className="px-6 py-4 font-medium">Date</th>
-              <th className="px-6 py-4 font-medium">Company</th>
-              <th className="px-6 py-4 font-medium">Description</th>
-              <th className="px-6 py-4 font-medium">Payment</th>
-              <th className="px-6 py-4 font-medium text-emerald-600 dark:text-emerald-500">In (Income)</th>
-              <th className="px-6 py-4 font-medium text-rose-600 dark:text-rose-500">Out (Expense)</th>
-              <th className="px-6 py-4 font-medium">Rekap Saldo</th>
-              <th className="px-6 py-4 font-medium text-right">Actions</th>
+              <th className="px-4 py-3 font-medium">ID</th>
+              <th className="px-4 py-3 font-medium">Tanggal</th>
+              <th className="px-4 py-3 font-medium">Project</th>
+              <th className="px-4 py-3 font-medium">Akun</th>
+              <th className="px-4 py-3 font-medium">Deskripsi</th>
+              <th className="px-4 py-3 font-medium">Metode</th>
+              <th className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">Pemasukan</th>
+              <th className="px-4 py-3 font-medium text-rose-600 dark:text-rose-500">Pengeluaran</th>
+              <th className="px-4 py-3 font-medium">Rekap Saldo</th>
+              <th className="px-4 py-3 font-medium text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            <NewTransactionRow onAdd={addTransaction} />
+            <NewTransactionRow onAdd={addTransaction} projects={projects} accounts={accounts} />
             {transactions.map((trx) => (
-              <EditableTransactionRow 
-                key={trx.id} 
-                trx={trx} 
+              <EditableTransactionRow
+                key={trx.id}
+                trx={trx}
                 onUpdate={updateTransaction}
                 onDelete={deleteTransaction}
+                projects={projects}
+                accounts={accounts}
               />
             ))}
           </tbody>
         </table>
       </div>
       <div className="p-4 border-t border-border flex justify-between items-center text-sm text-muted-foreground bg-muted/20">
-        <p>Showing {transactions.length} of {pagination.total} transactions</p>
+        <p>
+          Menampilkan {transactions.length} dari {pagination.total} transaksi
+        </p>
         <div className="flex gap-1">
-          <button 
-            onClick={() => changePage(Math.max(1, pagination.current_page - 1))} 
+          <button
+            onClick={() => changePage(Math.max(1, pagination.current_page - 1))}
             disabled={pagination.current_page <= 1}
-            className="px-3 py-1 border border-border rounded bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground">
-              Previous
+            className="px-3 py-1 border border-border rounded bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
+          >
+            Sebelumnya
           </button>
-          <button 
-            onClick={() => changePage(Math.min(pagination.last_page, pagination.current_page + 1))} 
+          <button
+            onClick={() => changePage(Math.min(pagination.last_page, pagination.current_page + 1))}
             disabled={pagination.current_page >= pagination.last_page}
-            className="px-3 py-1 border border-border rounded bg-background text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-              Next
+            className="px-3 py-1 border border-border rounded bg-background text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Selanjutnya
           </button>
         </div>
       </div>

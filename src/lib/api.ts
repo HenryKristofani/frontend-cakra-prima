@@ -22,13 +22,17 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
     }
   }
 
+  const isFormData = customConfig.body instanceof FormData;
+
+  const headersObj: Record<string, string> = {
+    'Accept': 'application/json',
+    ...(!isFormData && { 'Content-Type': 'application/json' }),
+    ...(headers as Record<string, string>),
+  };
+
   const config: RequestInit = {
     ...customConfig,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...headers,
-    },
+    headers: headersObj,
   };
 
   const response = await fetch(url, config);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Plus, Loader2, Trash2, Save, CheckSquare, TableIcon, X, FileSpreadsheet } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Save, CheckSquare, TableIcon, X, FileSpreadsheet, Upload, Download } from "lucide-react";
 import { DebtGroup, DebtItem, DebtPayment } from "@/types/hutang";
 import { fetchApi } from "@/lib/api";
 
@@ -312,6 +312,9 @@ export function DebtGroupDetail({ groupId, onBack }: { groupId: number; onBack: 
   const [newPaymentAmount, setNewPaymentAmount] = useState("");
   const [isAddingPayment, setIsAddingPayment] = useState(false);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
   const fetchGroup = async () => {
     try {
       const res = await fetchApi<DebtGroup>(`/debt-groups/${groupId}`);
@@ -459,6 +462,34 @@ export function DebtGroupDetail({ groupId, onBack }: { groupId: number; onBack: 
     }
   };
 
+  const handleDownloadTemplate = () => {
+    handleExportExcel();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsImporting(true);
+    try {
+      await fetchApi(`/debt-groups/${groupId}/import`, {
+        method: "POST",
+        body: formData,
+      });
+      alert("Import berhasil!");
+      fetchGroup();
+    } catch (error) {
+      console.error(error);
+      alert("Gagal mengimpor data. Pastikan format sesuai template.");
+    } finally {
+      setIsImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -497,6 +528,22 @@ export function DebtGroupDetail({ groupId, onBack }: { groupId: number; onBack: 
               className="flex items-center gap-2 px-3 py-2 border border-border bg-[#92D050]/20 text-black dark:text-foreground rounded-lg text-sm hover:bg-[#92D050]/40 transition-colors">
               <TableIcon className="w-4 h-4" /> Bulk Pembayaran
             </button>
+            <button onClick={handleDownloadTemplate}
+              className="flex items-center gap-2 px-3 py-2 border border-border bg-background rounded-lg text-sm hover:bg-muted transition-colors">
+              <Download className="w-4 h-4 text-brand" /> Template
+            </button>
+            <button onClick={() => fileInputRef.current?.click()} disabled={isImporting}
+              className="flex items-center gap-2 px-3 py-2 border border-border bg-background rounded-lg text-sm hover:bg-muted transition-colors disabled:opacity-50">
+              {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4 text-brand" />}
+              Import CSV
+            </button>
+            <input 
+              type="file" 
+              accept=".csv,.xlsx" 
+              ref={fileInputRef} 
+              className="hidden" 
+              onChange={handleFileChange} 
+            />
             <button onClick={handleExportExcel} disabled={isSavingAll}
               className="flex items-center gap-2 px-3 py-2 border border-border bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50">
               {isSavingAll && !dirtyCount ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}

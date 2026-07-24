@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ArrowLeft, Plus, Loader2, Trash2, Save, CheckSquare, TableIcon, X } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Trash2, Save, CheckSquare, TableIcon, X, FileSpreadsheet } from "lucide-react";
 import { DebtGroup, DebtItem, DebtPayment } from "@/types/hutang";
 import { fetchApi } from "@/lib/api";
 
@@ -440,6 +440,25 @@ export function DebtGroupDetail({ groupId, onBack }: { groupId: number; onBack: 
     } catch (e) { console.error(e); alert("Gagal menghapus pembayaran"); }
   };
 
+  const handleExportExcel = () => {
+    if (!group) return;
+    setIsSavingAll(true);
+    try {
+      const url = `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/debt-groups/${groupId}/export`;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${group.name.replace(/\s+/g, "_")}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (e) {
+      console.error(e);
+      alert("Gagal mengunduh file Excel");
+    } finally {
+      setIsSavingAll(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center p-12">
@@ -477,6 +496,11 @@ export function DebtGroupDetail({ groupId, onBack }: { groupId: number; onBack: 
             <button onClick={() => setShowBulkModal("payments")}
               className="flex items-center gap-2 px-3 py-2 border border-border bg-[#92D050]/20 text-black dark:text-foreground rounded-lg text-sm hover:bg-[#92D050]/40 transition-colors">
               <TableIcon className="w-4 h-4" /> Bulk Pembayaran
+            </button>
+            <button onClick={handleExportExcel} disabled={isSavingAll}
+              className="flex items-center gap-2 px-3 py-2 border border-border bg-emerald-600 text-white rounded-lg text-sm font-medium hover:bg-emerald-700 transition-colors disabled:opacity-50">
+              {isSavingAll && !dirtyCount ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+              Export Excel
             </button>
             {dirtyCount > 0 && (
               <button onClick={handleSaveAll} disabled={isSavingAll}

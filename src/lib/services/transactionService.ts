@@ -20,9 +20,10 @@ export const transactionService = {
   /**
    * Fetch the summary of transactions (balances and monthly totals).
    */
-  async getSummary(): Promise<TransactionSummary> {
+  async getSummary(filters: TransactionFilters = {}): Promise<TransactionSummary> {
     return fetchApi<TransactionSummary>('/transactions-summary', {
       method: 'GET',
+      params: filters as Record<string, string | number | undefined>,
     });
   },
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { PaginatedResponse, Transaction, TransactionSummary } from "@/types/transaction";
+import { PaginatedResponse, Transaction, TransactionFilters, TransactionSummary } from "@/types/transaction";
 import { useTransactions } from "@/hooks/useTransactions";
 import { TransactionSummaryCards } from "./TransactionSummaryCards";
 import { TransactionTable } from "./TransactionTable";
@@ -8,9 +8,10 @@ import { TransactionTable } from "./TransactionTable";
 interface TransactionContainerProps {
   initialData: PaginatedResponse<Transaction>;
   initialSummary: TransactionSummary;
+  initialFilters?: TransactionFilters;
 }
 
-export function TransactionContainer({ initialData, initialSummary }: TransactionContainerProps) {
+export function TransactionContainer({ initialData, initialSummary, initialFilters = {} }: TransactionContainerProps) {
   const {
     transactions,
     pagination,
@@ -20,7 +21,7 @@ export function TransactionContainer({ initialData, initialSummary }: Transactio
     addTransaction,
     updateTransaction,
     deleteTransaction,
-  } = useTransactions(initialData, initialSummary);
+  } = useTransactions(initialData, initialSummary, initialFilters);
 
   return (
     <>

@@ -3,12 +3,24 @@ import { TransactionContainer } from "@/components/features/transactions/Transac
 
 export const dynamic = "force-dynamic";
 
-export default async function KasPage() {
+export default async function KasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const year = typeof params.year === "string" ? params.year : undefined;
+  const month = typeof params.month === "string" ? params.month : undefined;
+  
+  const filters: Record<string, any> = { page: 1 };
+  if (year && year !== "all") filters.year = year;
+  if (month && month !== "all") filters.month = month;
+
   // Fetch initial data on the server
   // This runs on the server and avoids client request waterfalls
   const [initialData, initialSummary] = await Promise.all([
-    transactionService.getTransactions({ page: 1 }),
-    transactionService.getSummary()
+    transactionService.getTransactions(filters),
+    transactionService.getSummary(filters)
   ]);
 
   return (
@@ -19,8 +31,10 @@ export default async function KasPage() {
       </div>
       
       <TransactionContainer 
+        key={`${year ?? 'all'}-${month ?? 'all'}`}
         initialData={initialData}
         initialSummary={initialSummary}
+        initialFilters={filters}
       />
     </div>
   );

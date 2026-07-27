@@ -2,14 +2,18 @@ import { useState, useCallback } from 'react';
 import { transactionService } from '@/lib/services/transactionService';
 import { PaginatedResponse, Transaction, TransactionFilters, TransactionSummary } from '@/types/transaction';
 
-export function useTransactions(initialData: PaginatedResponse<Transaction>, initialSummary: TransactionSummary) {
+export function useTransactions(
+  initialData: PaginatedResponse<Transaction>,
+  initialSummary: TransactionSummary,
+  initialFilters: TransactionFilters = {}
+) {
   const [data, setData] = useState<PaginatedResponse<Transaction>>(initialData);
   const [summary, setSummary] = useState<TransactionSummary>(initialSummary);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Current active filters
-  const [filters, setFilters] = useState<TransactionFilters>({ page: initialData.current_page });
+  // Current active filters (initialised from props, updated on page change)
+  const [filters, setFilters] = useState<TransactionFilters>(initialFilters);
 
   // Fetch logic wrapped in useCallback to avoid unnecessary re-renders
   const fetchTransactions = useCallback(async (currentFilters: TransactionFilters) => {
@@ -19,7 +23,7 @@ export function useTransactions(initialData: PaginatedResponse<Transaction>, ini
       // Execute in parallel
       const [transactionsData, summaryData] = await Promise.all([
         transactionService.getTransactions(currentFilters),
-        transactionService.getSummary()
+        transactionService.getSummary(currentFilters)
       ]);
       setData(transactionsData);
       setSummary(summaryData);

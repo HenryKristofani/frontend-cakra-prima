@@ -1,8 +1,38 @@
 "use client";
 
 import { Bell, Search, UserCircle, Menu } from "lucide-react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const currentYear = searchParams.get("year") || "all";
+  const currentMonth = searchParams.get("month") || "all";
+
+  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const val = e.target.value;
+    if (val === "all") {
+      params.delete("year");
+    } else {
+      params.set("year", val);
+    }
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
+  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const val = e.target.value;
+    if (val === "all") {
+      params.delete("month");
+    } else {
+      params.set("month", val);
+    }
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+  };
+
   return (
     <header className="h-16 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-10">
       <div className="flex items-center flex-1 gap-4">
@@ -22,13 +52,22 @@ export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
         </div>
         
         <div className="hidden lg:flex items-center gap-2">
-          <select className="bg-muted border-none rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/50 cursor-pointer outline-none hover:bg-muted/80 transition-colors appearance-none pr-8 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_8px_center] bg-no-repeat">
+          <select 
+            value={currentYear}
+            onChange={handleYearChange}
+            className="bg-muted border-none rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/50 cursor-pointer outline-none hover:bg-muted/80 transition-colors appearance-none pr-8 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_8px_center] bg-no-repeat"
+          >
             <option value="all">Semua Tahun</option>
+            <option value="2025">2025</option>
             <option value="2026">2026</option>
             <option value="2027">2027</option>
             <option value="2028">2028</option>
           </select>
-          <select className="bg-muted border-none rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/50 cursor-pointer outline-none hover:bg-muted/80 transition-colors appearance-none pr-8 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_8px_center] bg-no-repeat">
+          <select 
+            value={currentMonth}
+            onChange={handleMonthChange}
+            className="bg-muted border-none rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-brand/50 cursor-pointer outline-none hover:bg-muted/80 transition-colors appearance-none pr-8 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748b%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:16px_16px] bg-[right_8px_center] bg-no-repeat"
+          >
             <option value="all">Semua Bulan</option>
             <option value="1">Januari</option>
             <option value="2">Februari</option>

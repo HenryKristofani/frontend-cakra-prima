@@ -56,6 +56,6 @@ export interface PaginatedResponse<T> {
 
 export interface TransactionFilters {
   page?: number;
-  month?: number;
-  year?: number;
+  month?: string | number;
+  year?: string | number;
 }

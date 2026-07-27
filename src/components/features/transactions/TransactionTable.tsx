@@ -2,6 +2,7 @@
 
 import { Search, Loader2, FileSpreadsheet } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Transaction, Project, Account } from "@/types/transaction";
 import { NewTransactionRow } from "./NewTransactionRow";
 import { EditableTransactionRow } from "./EditableTransactionRow";
@@ -31,8 +32,11 @@ export function TransactionTable({
   updateTransaction,
   deleteTransaction,
 }: TransactionTableProps) {
-  const [exportYear, setExportYear] = useState<string>(new Date().getFullYear().toString());
-  const [exportMonth, setExportMonth] = useState<string>((new Date().getMonth() + 1).toString());
+  // Read the active period filter from the URL (same source as Navbar)
+  const searchParams = useSearchParams();
+  const activeYear = searchParams.get("year");
+  const activeMonth = searchParams.get("month");
+
   const [isExporting, setIsExporting] = useState(false);
 
   const [projects, setProjects] = useState<Project[]>([]);
@@ -54,8 +58,9 @@ export function TransactionTable({
     setIsExporting(true);
     try {
       const params = new URLSearchParams();
-      if (exportYear) params.append("year", exportYear);
-      if (exportMonth) params.append("month", exportMonth);
+      // Use the same year/month that's active in the Navbar filter
+      if (activeYear && activeYear !== "all") params.append("year", activeYear);
+      if (activeMonth && activeMonth !== "all") params.append("month", activeMonth);
       const url = `${API_BASE}/transactions-export?${params.toString()}`;
       const a = document.createElement("a");
       a.href = url;
@@ -68,15 +73,11 @@ export function TransactionTable({
     }
   };
 
-  const months = [
-    { label: "Semua Bulan", value: "" },
-    ...Array.from({ length: 12 }, (_, i) => ({
-      label: new Date(2000, i).toLocaleString("id-ID", { month: "long" }),
-      value: (i + 1).toString(),
-    })),
-  ];
-  const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
+  // Build a human-readable label for the active period (shown on the export button tooltip)
+  const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  const periodLabel = (activeYear && activeYear !== "all")
+    ? `${(activeMonth && activeMonth !== "all") ? monthNames[parseInt(activeMonth) - 1] + " " : ""}${activeYear}`
+    : "Semua Periode";
 
   return (
     <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
@@ -90,28 +91,11 @@ export function TransactionTable({
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          <select
-            value={exportMonth}
-            onChange={(e) => setExportMonth(e.target.value)}
-            className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
-          >
-            {months.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-          <select
-            value={exportYear}
-            onChange={(e) => setExportYear(e.target.value)}
-            className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
+          {/* Read-only badge showing which period will be exported */}
+          <span className="flex items-center gap-1.5 px-3 py-2 bg-background border border-border rounded-lg text-sm text-muted-foreground">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+            Periode: <strong className="text-foreground">{periodLabel}</strong>
+          </span>
           <button
             onClick={handleExport}
             disabled={isExporting}

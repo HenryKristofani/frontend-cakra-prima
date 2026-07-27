@@ -1,7 +1,8 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Transaction, Project, Account } from "@/types/transaction";
 
 interface NewTransactionRowProps {
@@ -11,7 +12,24 @@ interface NewTransactionRowProps {
 }
 
 export function NewTransactionRow({ onAdd, projects = [], accounts = [] }: NewTransactionRowProps) {
-  const [date, setDate] = useState("");
+  const searchParams = useSearchParams();
+  const year = searchParams.get('year');
+  const month = searchParams.get('month');
+  
+  const initialDate = (year && year !== 'all' && month && month !== 'all') 
+    ? `${year}-${month.padStart(2, '0')}-01` 
+    : "";
+
+  const [date, setDate] = useState(initialDate);
+
+  // Sync date if URL changes
+  useEffect(() => {
+    if (year && year !== 'all' && month && month !== 'all') {
+      setDate(`${year}-${month.padStart(2, '0')}-01`);
+    } else {
+      setDate("");
+    }
+  }, [year, month]);
   const [projectId, setProjectId] = useState<string>("");
   const [accountId, setAccountId] = useState<string>("");
   const [company, setCompany] = useState("");
@@ -35,7 +53,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [] }: NewTr
         income: income ? Number(income) : 0,
         expense: expense ? Number(expense) : 0,
       });
-      setDate("");
+      setDate(initialDate);
       setProjectId("");
       setAccountId("");
       setCompany("");

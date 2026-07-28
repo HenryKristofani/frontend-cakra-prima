@@ -38,6 +38,16 @@ export const transactionService = {
   },
 
   /**
+   * Create a new transaction specifically for a project (nested route).
+   */
+  async createProjectTransaction(projectId: number | string, data: Omit<Transaction, 'id' | 'project_id' | 'created_at' | 'updated_at'>): Promise<Transaction> {
+    return fetchApi<Transaction>(`/projects/${projectId}/transactions`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
    * Update an existing transaction.
    */
   async updateTransaction(id: number, data: Partial<Omit<Transaction, 'id' | 'created_at' | 'updated_at'>>): Promise<Transaction> {

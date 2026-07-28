@@ -16,6 +16,15 @@ export const projectService = {
   },
 
   /**
+   * Fetch a single project by ID.
+   */
+  async getProjectById(id: number | string): Promise<Project> {
+    return fetchApi<Project>(`/projects/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
    * Create a new project.
    */
   async createProject(data: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Promise<Project> {

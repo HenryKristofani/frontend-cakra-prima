@@ -43,7 +43,13 @@ export function useTransactions(
     setIsLoading(true);
     setError(null);
     try {
-      await transactionService.createTransaction(payload);
+      if (filters.project_id) {
+        // If we are in project context, use nested route
+        const { project_id, ...restPayload } = payload;
+        await transactionService.createProjectTransaction(filters.project_id, restPayload as Omit<Transaction, 'id' | 'project_id' | 'created_at' | 'updated_at'>);
+      } else {
+        await transactionService.createTransaction(payload);
+      }
       // Reset to page 1 after adding
       await fetchTransactions({ ...filters, page: 1 });
     } catch (err: any) {

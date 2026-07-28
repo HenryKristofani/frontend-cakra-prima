@@ -77,6 +77,12 @@ export function EditableProjectRow({ project, onUpdate, onDelete }: EditableProj
           >
             {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Simpan"}
           </button>
+          <a
+            href={`/dashboard/projects/${project.id}`}
+            className="px-3 py-1.5 text-xs font-medium text-brand bg-brand/10 dark:bg-brand/20 dark:text-brand-300 hover:bg-brand/20 dark:hover:bg-brand/30 rounded-md transition-colors flex items-center justify-center"
+          >
+            Buka
+          </a>
           <button
             onClick={handleDelete}
             disabled={isSaving || isDeleting}

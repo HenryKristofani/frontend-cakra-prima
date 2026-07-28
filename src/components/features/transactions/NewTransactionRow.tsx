@@ -9,9 +9,11 @@ interface NewTransactionRowProps {
   onAdd: (data: Omit<Transaction, "id">) => Promise<void>;
   projects?: Project[];
   accounts?: Account[];
+  lockedProjectId?: number | string;
+  lockedProjectName?: string;
 }
 
-export function NewTransactionRow({ onAdd, projects = [], accounts = [] }: NewTransactionRowProps) {
+export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedProjectId, lockedProjectName }: NewTransactionRowProps) {
   const searchParams = useSearchParams();
   const year = searchParams.get('year');
   const month = searchParams.get('month');
@@ -31,6 +33,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [] }: NewTr
     }
   }, [year, month]);
   const [projectId, setProjectId] = useState<string>("");
+  // ... rest initialized
   const [accountId, setAccountId] = useState<string>("");
   const [company, setCompany] = useState("");
   const [description, setDescription] = useState("");
@@ -45,7 +48,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [] }: NewTr
     try {
       await onAdd({
         date,
-        project_id: projectId ? Number(projectId) : null,
+        project_id: lockedProjectId ? Number(lockedProjectId) : (projectId ? Number(projectId) : null),
         account_id: accountId ? Number(accountId) : null,
         company: company || undefined,
         description,
@@ -54,7 +57,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [] }: NewTr
         expense: expense ? Number(expense) : 0,
       });
       setDate(initialDate);
-      setProjectId("");
+      if (!lockedProjectId) setProjectId("");
       setAccountId("");
       setCompany("");
       setDescription("");
@@ -81,18 +84,24 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [] }: NewTr
         />
       </td>
       <td className="px-4 py-3">
-        <select
-          value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
-          className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
-        >
-          <option value="">-- Pilih Project --</option>
-          {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+        {lockedProjectId ? (
+          <div className="w-full min-w-[130px] bg-muted/50 border border-border rounded-lg px-2.5 py-1.5 text-sm font-medium flex items-center h-[34px] overflow-hidden whitespace-nowrap text-ellipsis">
+            {lockedProjectName || "Project"}
+          </div>
+        ) : (
+          <select
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+          >
+            <option value="">-- Pilih Project --</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        )}
       </td>
       <td className="px-4 py-3">
         <select

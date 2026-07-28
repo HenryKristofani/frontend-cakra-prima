@@ -58,4 +58,5 @@ export interface TransactionFilters {
   page?: number;
   month?: string | number;
   year?: string | number;
+  project_id?: number | string;
 }

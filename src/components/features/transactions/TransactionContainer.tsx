@@ -9,9 +9,17 @@ interface TransactionContainerProps {
   initialData: PaginatedResponse<Transaction>;
   initialSummary: TransactionSummary;
   initialFilters?: TransactionFilters;
+  lockedProjectId?: number | string;
+  lockedProjectName?: string;
 }
 
-export function TransactionContainer({ initialData, initialSummary, initialFilters = {} }: TransactionContainerProps) {
+export function TransactionContainer({ 
+  initialData, 
+  initialSummary, 
+  initialFilters = {},
+  lockedProjectId,
+  lockedProjectName,
+}: TransactionContainerProps) {
   const {
     transactions,
     pagination,
@@ -34,6 +42,8 @@ export function TransactionContainer({ initialData, initialSummary, initialFilte
         addTransaction={addTransaction}
         updateTransaction={updateTransaction}
         deleteTransaction={deleteTransaction}
+        lockedProjectId={lockedProjectId}
+        lockedProjectName={lockedProjectName}
       />
     </>
   );

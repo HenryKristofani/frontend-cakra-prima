@@ -21,6 +21,8 @@ interface TransactionTableProps {
   addTransaction: (data: Omit<Transaction, "id">) => Promise<void>;
   updateTransaction: (id: number, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: number) => Promise<void>;
+  lockedProjectId?: number | string;
+  lockedProjectName?: string;
 }
 
 export function TransactionTable({
@@ -31,6 +33,8 @@ export function TransactionTable({
   addTransaction,
   updateTransaction,
   deleteTransaction,
+  lockedProjectId,
+  lockedProjectName,
 }: TransactionTableProps) {
   // Read the active period filter from the URL (same source as Navbar)
   const searchParams = useSearchParams();
@@ -129,7 +133,13 @@ export function TransactionTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            <NewTransactionRow onAdd={addTransaction} projects={projects} accounts={accounts} />
+            <NewTransactionRow 
+              onAdd={addTransaction} 
+              projects={projects} 
+              accounts={accounts} 
+              lockedProjectId={lockedProjectId}
+              lockedProjectName={lockedProjectName}
+            />
             {transactions.map((trx) => (
               <EditableTransactionRow
                 key={trx.id}

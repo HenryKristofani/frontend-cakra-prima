@@ -10,6 +10,8 @@ interface NewProjectRowProps {
 
 export function NewProjectRow({ onAdd }: NewProjectRowProps) {
   const [name, setName] = useState("");
+  const [location, setLocation] = useState("");
+  const [rabDate, setRabDate] = useState("");
   const [status, setStatus] = useState<"aktif" | "nonaktif">("aktif");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -19,9 +21,13 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
     try {
       await onAdd({
         name,
+        location: location || null,
+        rab_date: rabDate || null,
         status,
       });
       setName("");
+      setLocation("");
+      setRabDate("");
       setStatus("aktif");
     } catch (e) {
       console.error(e);
@@ -41,6 +47,23 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
           onChange={(e) => setName(e.target.value)}
           placeholder="Nama Project..."
           className="w-full min-w-[200px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          type="text"
+          value={location}
+          onChange={(e) => setLocation(e.target.value)}
+          placeholder="Lokasi..."
+          className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          type="date"
+          value={rabDate}
+          onChange={(e) => setRabDate(e.target.value)}
+          className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         />
       </td>
       <td className="px-4 py-3">

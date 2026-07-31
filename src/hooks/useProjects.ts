@@ -59,12 +59,30 @@ export function useProjects(initialData: Project[]) {
     }
   }, [fetchProjects]);
 
+  const bulkUpdateProjects = useCallback(async (changes: Record<number, Partial<Project>>) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const payload = Object.entries(changes).map(([id, data]) => ({
+        id: Number(id),
+        ...data,
+      }));
+      await projectService.bulkUpdateProjects(payload);
+      await fetchProjects();
+    } catch (err: any) {
+      setError(err.message || 'Failed to save project changes');
+      setIsLoading(false);
+      throw err;
+    }
+  }, [fetchProjects]);
+
   return {
     projects: data,
     isLoading,
     error,
     addProject,
     updateProject,
+    bulkUpdateProjects,
     deleteProject,
   };
 }

@@ -2,6 +2,8 @@ export interface Project {
   id: number;
   name: string;
   status: "aktif" | "nonaktif";
+  location?: string | null;
+  rab_date?: string | null;
 }
 
 export interface Account {

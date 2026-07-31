@@ -44,6 +44,13 @@ export const projectService = {
     });
   },
 
+  async bulkUpdateProjects(changes: Array<Partial<Omit<Project, 'id' | 'created_at' | 'updated_at'>> & { id: number }>): Promise<Project[]> {
+    return fetchApi<Project[]>('/projects/bulk', {
+      method: 'PUT',
+      body: JSON.stringify({ projects: changes }),
+    });
+  },
+
   /**
    * Delete a project.
    */

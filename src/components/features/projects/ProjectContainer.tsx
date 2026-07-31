@@ -14,6 +14,7 @@ export function ProjectContainer({ initialData }: ProjectContainerProps) {
     isLoading,
     addProject,
     updateProject,
+    bulkUpdateProjects,
     deleteProject,
   } = useProjects(initialData);
 
@@ -23,6 +24,7 @@ export function ProjectContainer({ initialData }: ProjectContainerProps) {
       isLoading={isLoading}
       addProject={addProject}
       updateProject={updateProject}
+      bulkUpdateProjects={bulkUpdateProjects}
       deleteProject={deleteProject}
     />
   );

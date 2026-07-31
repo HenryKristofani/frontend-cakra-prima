@@ -1,17 +1,22 @@
 "use client";
 
 import { Loader2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Project } from "@/types/transaction";
 
 interface EditableProjectRowProps {
   project: Project;
   onUpdate: (id: number, data: Partial<Project>) => Promise<void>;
+  onChange?: (id: number, data: Partial<Project>) => void;
+  onSaved?: (id: number) => void;
+  isPending?: boolean;
   onDelete: (id: number) => Promise<void>;
 }
 
-export function EditableProjectRow({ project, onUpdate, onDelete }: EditableProjectRowProps) {
+export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDelete, isPending }: EditableProjectRowProps) {
   const [name, setName] = useState(project.name);
+  const [location, setLocation] = useState(project.location ?? "");
+  const [rabDate, setRabDate] = useState(project.rab_date ?? "");
   const [status, setStatus] = useState<"aktif" | "nonaktif">(
     project.status === "nonaktif" ? "nonaktif" : "aktif"
   );
@@ -19,13 +24,24 @@ export function EditableProjectRow({ project, onUpdate, onDelete }: EditableProj
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const notifyChange = (changes: Partial<Project>) => {
+    if (onChange) {
+      onChange(project.id, changes);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
       await onUpdate(project.id, {
         name,
+        location,
+        rab_date: rabDate || null,
         status,
       });
+      if (onSaved) {
+        onSaved(project.id);
+      }
     } catch (e) {
       console.error(e);
       alert("Gagal memperbarui project");
@@ -53,15 +69,44 @@ export function EditableProjectRow({ project, onUpdate, onDelete }: EditableProj
         <input
           type="text"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            notifyChange({ name: e.target.value });
+          }}
           placeholder="Nama Project..."
           className="w-full min-w-[200px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         />
       </td>
       <td className="px-4 py-3">
+        <input
+          type="text"
+          value={location}
+          onChange={(e) => {
+            setLocation(e.target.value);
+            notifyChange({ location: e.target.value });
+          }}
+          placeholder="Lokasi..."
+          className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          type="date"
+          value={rabDate}
+          onChange={(e) => {
+            setRabDate(e.target.value);
+            notifyChange({ rab_date: e.target.value || null });
+          }}
+          className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+        />
+      </td>
+      <td className="px-4 py-3">
         <select
           value={status}
-          onChange={(e) => setStatus(e.target.value as "aktif" | "nonaktif")}
+          onChange={(e) => {
+            setStatus(e.target.value as "aktif" | "nonaktif");
+            notifyChange({ status: e.target.value as "aktif" | "nonaktif" });
+          }}
           className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         >
           <option value="aktif">Aktif</option>
@@ -69,7 +114,10 @@ export function EditableProjectRow({ project, onUpdate, onDelete }: EditableProj
         </select>
       </td>
       <td className="px-4 py-3 text-right">
-        <div className="flex items-center justify-end gap-1">
+        <div className="flex flex-col md:flex-row items-end md:items-center justify-end gap-1">
+          {isPending && (
+            <span className="text-xs text-amber-600">Perubahan belum disimpan</span>
+          )}
           <button
             onClick={handleSave}
             disabled={isSaving || isDeleting}

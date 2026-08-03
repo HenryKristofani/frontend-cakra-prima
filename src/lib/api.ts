@@ -24,12 +24,30 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
 
   const isFormData = customConfig.body instanceof FormData;
 
-  // Extract XSRF-TOKEN from cookies if we are on the client side
+  // Extract XSRF-TOKEN and Cookies
   let xsrfToken = '';
-  if (typeof document !== 'undefined') {
+  let serverCookie = '';
+  let referer = '';
+
+  if (typeof window !== 'undefined') {
+    // Client-side
     const match = document.cookie.match(new RegExp('(^|;\\s*)XSRF-TOKEN=([^;]*)'));
     if (match) {
       xsrfToken = decodeURIComponent(match[2]);
+    }
+  } else {
+    // Server-side
+    try {
+      const { cookies } = require('next/headers');
+      const cookieStore = await cookies();
+      serverCookie = cookieStore.toString();
+      const xsrfCookie = cookieStore.get('XSRF-TOKEN');
+      if (xsrfCookie) {
+        xsrfToken = decodeURIComponent(xsrfCookie.value);
+      }
+      referer = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    } catch (e) {
+      // Ignore errors if next/headers is not available
     }
   }
 
@@ -37,6 +55,8 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
     'Accept': 'application/json',
     ...(!isFormData && { 'Content-Type': 'application/json' }),
     ...(xsrfToken && { 'X-XSRF-TOKEN': xsrfToken }),
+    ...(serverCookie && { 'Cookie': serverCookie }),
+    ...(referer && { 'Referer': referer }),
     ...(headers as Record<string, string>),
   };
 

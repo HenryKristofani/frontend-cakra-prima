@@ -11,7 +11,7 @@ export interface RabItem {
   bobot_percentage: number;
   latest_progress_percentage: number;
   total_percentage: number;
-  status: 'aktif' | 'dikurangi';
+  status: 'aktif' | 'dikurangi' | 'dibatalkan';
 }
 
 export interface RabCategory {
@@ -62,7 +62,7 @@ export interface CreateItemPayload {
   volume: number;
   unit: string;
   unit_price: number;
-  status: 'aktif' | 'dikurangi';
+  status: 'aktif' | 'dikurangi' | 'dibatalkan';
 }
 
 export interface UpdateItemPayload {
@@ -70,7 +70,7 @@ export interface UpdateItemPayload {
   volume?: number;
   unit?: string;
   unit_price?: number;
-  status?: 'aktif' | 'dikurangi';
+  status?: 'aktif' | 'dikurangi' | 'dibatalkan';
 }
 
 export interface CreateProgressReportPayload {

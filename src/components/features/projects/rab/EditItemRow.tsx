@@ -18,7 +18,7 @@ export function EditItemRow({ item, idx, onRefresh, onCancel }: EditItemRowProps
   const [volume, setVolume] = useState(item.volume.toString());
   const [unit, setUnit] = useState(item.unit);
   const [unitPrice, setUnitPrice] = useState(item.unit_price.toString());
-  const [status, setStatus] = useState<'aktif' | 'dikurangi'>(item.status);
+  const [status, setStatus] = useState<'aktif' | 'dikurangi' | 'dibatalkan'>(item.status);
   
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

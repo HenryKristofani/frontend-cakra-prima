@@ -1,20 +1,40 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { RabCategory, RabItem } from '@/types/rab';
 import { formatCurrency } from '@/utils/formatters';
-import { Edit2, Trash2, Loader2, ListTodo } from 'lucide-react';
-import { AddItemRow } from './AddItemRow';
-import { EditItemRow } from './EditItemRow';
+import { Edit2, Trash2, Loader2, ListTodo, Plus, Save, AlertCircle } from 'lucide-react';
 import { ProgressReportPanel } from './ProgressReportPanel';
 import { rabService } from '@/lib/services/rabService';
 import { AddCategoryForm } from './AddCategoryForm';
+import { DraftItemRow, DraftItem } from './DraftItemRow';
+import { DirtyItemRow, DirtyItemState } from './DirtyItemRow';
 
 interface RabCategorySectionProps {
   category: RabCategory;
   depth?: number;
   onRefresh: () => Promise<void>;
   projectId: number | string;
+  /** Callback to notify parent of unsaved changes (for beforeunload guard) */
+  onDirtyChange?: (categoryId: number, hasDirty: boolean) => void;
+}
+
+// ─── Static counter for unique draft keys (no re-render side-effects) ─────────
+let draftKeyCounter = 0;
+function newDraftKey() {
+  return `draft_${++draftKeyCounter}`;
+}
+
+// ─── Default state for a new draft row ────────────────────────────────────────
+function newDraft(): DraftItem {
+  return {
+    _key: newDraftKey(),
+    description: '',
+    volume: '',
+    unit: 'm2',
+    unit_price: '',
+    status: 'aktif',
+  };
 }
 
 export function RabCategorySection({
@@ -22,16 +42,193 @@ export function RabCategorySection({
   depth = 0,
   onRefresh,
   projectId,
+  onDirtyChange,
 }: RabCategorySectionProps) {
+  // ─── Category edit state ────────────────────────────────────────────────────
   const [isEditingCategory, setIsEditingCategory] = useState(false);
   const [catCode, setCatCode] = useState(category.code || '');
   const [catName, setCatName] = useState(category.name);
   const [isSavingCat, setIsSavingCat] = useState(false);
   const [isDeletingCat, setIsDeletingCat] = useState(false);
 
-  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  // ─── Progress report panel ─────────────────────────────────────────────────
   const [reportItemId, setReportItemId] = useState<number | null>(null);
 
+  // ─── DRAFT state (new unsaved rows) ────────────────────────────────────────
+  const [draftItems, setDraftItems] = useState<DraftItem[]>([]);
+
+  // ─── DIRTY state (existing rows being edited) ──────────────────────────────
+  // Map of itemId → current edit state
+  const [dirtyItems, setDirtyItems] = useState<Map<number, DirtyItemState>>(new Map());
+
+  // ─── Bulk save state ────────────────────────────────────────────────────────
+  const [isSavingBulk, setIsSavingBulk] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
+
+  // ─── Derived: any unsaved changes? ─────────────────────────────────────────
+  const hasUnsavedChanges = draftItems.length > 0 || dirtyItems.size > 0;
+
+  // Notify parent on dirty state change
+  useEffect(() => {
+    onDirtyChange?.(category.id, hasUnsavedChanges);
+  }, [hasUnsavedChanges, category.id, onDirtyChange]);
+
+  // ─── Handlers: Draft items ──────────────────────────────────────────────────
+  const handleAddDraftRow = useCallback(() => {
+    setDraftItems((prev) => [...prev, newDraft()]);
+  }, []);
+
+  const handleDraftChange = useCallback((key: string, field: keyof DraftItem, value: string) => {
+    setDraftItems((prev) =>
+      prev.map((d) =>
+        d._key === key
+          ? { ...d, [field]: value, errors: d.errors ? { ...d.errors, [field]: '' } : undefined }
+          : d,
+      ),
+    );
+  }, []);
+
+  const handleRemoveDraft = useCallback((key: string) => {
+    setDraftItems((prev) => prev.filter((d) => d._key !== key));
+  }, []);
+
+  // ─── Handlers: Dirty items (click pencil icon on existing row) ─────────────
+  const handleStartEdit = useCallback((item: RabItem) => {
+    setDirtyItems((prev) => {
+      if (prev.has(item.id)) return prev; // already editing
+      const next = new Map(prev);
+      next.set(item.id, {
+        description: item.description,
+        volume: item.volume.toString(),
+        unit: item.unit,
+        unit_price: item.unit_price.toString(),
+        status: item.status,
+      });
+      return next;
+    });
+  }, []);
+
+  const handleDirtyChange = useCallback((itemId: number, field: keyof DirtyItemState, value: string) => {
+    setDirtyItems((prev) => {
+      const existing = prev.get(itemId);
+      if (!existing) return prev;
+      const next = new Map(prev);
+      next.set(itemId, {
+        ...existing,
+        [field]: value,
+        errors: existing.errors ? { ...existing.errors, [field]: '' } : undefined,
+      });
+      return next;
+    });
+  }, []);
+
+  const handleRevertDirty = useCallback((itemId: number) => {
+    setDirtyItems((prev) => {
+      const next = new Map(prev);
+      next.delete(itemId);
+      return next;
+    });
+  }, []);
+
+  // ─── Bulk Save ──────────────────────────────────────────────────────────────
+  const handleBulkSave = async () => {
+    if (!hasUnsavedChanges) return;
+    setIsSavingBulk(true);
+    setBulkError(null);
+
+    try {
+      // 1. Bulk CREATE (draft items) – sequential first
+      if (draftItems.length > 0) {
+        const payload = draftItems.map((d) => ({
+          description: d.description,
+          volume: parseFloat(d.volume) || 0,
+          unit: d.unit,
+          unit_price: parseFloat(d.unit_price) || 0,
+          status: d.status,
+        }));
+
+        try {
+          await rabService.bulkCreateItems(category.id, payload);
+          setDraftItems([]); // success → clear all drafts
+        } catch (err: any) {
+          if (err?.errors) {
+            // Map 422 errors back to draft rows by index
+            const updatedDrafts = [...draftItems];
+            Object.entries(err.errors as Record<string, string[]>).forEach(([key, messages]) => {
+              const match = key.match(/^items\.(\d+)\.(.+)$/);
+              if (match) {
+                const idx = parseInt(match[1], 10);
+                const field = match[2] as keyof DraftItem;
+                if (updatedDrafts[idx]) {
+                  updatedDrafts[idx] = {
+                    ...updatedDrafts[idx],
+                    errors: {
+                      ...(updatedDrafts[idx].errors || {}),
+                      [field]: messages[0],
+                    },
+                  };
+                }
+              }
+            });
+            setDraftItems(updatedDrafts);
+            setBulkError('Beberapa item baru gagal disimpan. Periksa error di baris yang ditandai.');
+            return; // stop — don't attempt update
+          }
+          throw err;
+        }
+      }
+
+      // 2. Bulk UPDATE (dirty existing items) – after create succeeds
+      if (dirtyItems.size > 0) {
+        const payload = Array.from(dirtyItems.entries()).map(([id, state]) => ({
+          id,
+          description: state.description,
+          volume: parseFloat(state.volume) || 0,
+          unit: state.unit,
+          unit_price: parseFloat(state.unit_price) || 0,
+          status: state.status,
+        }));
+
+        try {
+          await rabService.bulkUpdateItems(category.id, payload);
+          setDirtyItems(new Map()); // success → clear all dirty
+        } catch (err: any) {
+          if (err?.errors) {
+            const dirtyEntries = Array.from(dirtyItems.entries());
+            const nextMap = new Map(dirtyItems);
+            Object.entries(err.errors as Record<string, string[]>).forEach(([key, messages]) => {
+              const match = key.match(/^items\.(\d+)\.(.+)$/);
+              if (match) {
+                const idx = parseInt(match[1], 10);
+                const field = match[2] as keyof DirtyItemState;
+                const [itemId, state] = dirtyEntries[idx] ?? [];
+                if (itemId !== undefined) {
+                  nextMap.set(itemId, {
+                    ...state,
+                    errors: { ...(state.errors || {}), [field]: messages[0] },
+                  });
+                }
+              }
+            });
+            setDirtyItems(nextMap);
+            setBulkError('Beberapa item gagal diperbarui. Periksa error di baris yang ditandai.');
+            return;
+          }
+          throw err;
+        }
+      }
+
+      // 3. Refresh to get updated bobot/totals from server
+      await onRefresh();
+    } catch (err: any) {
+      console.error(err);
+      setBulkError(err?.message || 'Terjadi kesalahan saat menyimpan.');
+    } finally {
+      setIsSavingBulk(false);
+    }
+  };
+
+  // ─── Category actions ────────────────────────────────────────────────────────
   const handleSaveCategory = async () => {
     if (!catName.trim()) return;
     setIsSavingCat(true);
@@ -50,7 +247,12 @@ export function RabCategorySection({
   };
 
   const handleDeleteCategory = async () => {
-    if (!window.confirm(`Yakin ingin menghapus kategori "${category.name}"? Semua item dan sub-kategori di dalamnya akan ikut terhapus.`)) return;
+    if (
+      !window.confirm(
+        `Yakin ingin menghapus kategori "${category.name}"? Semua item dan sub-kategori di dalamnya akan ikut terhapus.`,
+      )
+    )
+      return;
     setIsDeletingCat(true);
     try {
       await rabService.deleteCategory(category.id);
@@ -62,21 +264,32 @@ export function RabCategorySection({
     }
   };
 
-  // Calculate total Rekapitulasi (items + children)
+  // ─── Total calculator ────────────────────────────────────────────────────────
   const calculateTotalRecursively = (cat: RabCategory): number => {
-    const itemsTotal = cat.items.reduce((sum, item) => sum + (item.status !== 'dikurangi' ? item.total_price : 0), 0);
-    const childrenTotal = cat.children.reduce((sum, child) => sum + calculateTotalRecursively(child), 0);
+    const itemsTotal = cat.items.reduce(
+      (sum, item) => sum + (item.status !== 'dikurangi' ? item.total_price : 0),
+      0,
+    );
+    const childrenTotal = cat.children.reduce(
+      (sum, child) => sum + calculateTotalRecursively(child),
+      0,
+    );
     return itemsTotal + childrenTotal;
   };
   const categoryTotal = calculateTotalRecursively(category);
 
-  // Render Category Row based on depth
+  // ─── Unsaved changes indicator (only shown on Depth > 0 where items exist) ──
+  const pendingCount = draftItems.length + dirtyItems.size;
+
+  // ─── Render ──────────────────────────────────────────────────────────────────
   const renderCategoryRow = () => {
     if (depth === 0) {
-      // Area / Lantai (Yellow row, colspan 10)
       return (
         <tr className="bg-yellow-300 dark:bg-yellow-500/80 font-bold border-y border-border group">
-          <td colSpan={10} className="px-3 py-1.5 border-x border-border/50 text-center text-black dark:text-white uppercase relative">
+          <td
+            colSpan={10}
+            className="px-3 py-1.5 border-x border-border/50 text-center text-black dark:text-white uppercase relative"
+          >
             {isEditingCategory ? (
               <div className="flex items-center justify-center gap-2 max-w-sm mx-auto">
                 <input
@@ -85,10 +298,17 @@ export function RabCategorySection({
                   placeholder="Nama Area/Lantai (Contoh: LANTAI 1)"
                   className="w-full px-2 py-1 text-xs border rounded bg-background text-foreground"
                 />
-                <button onClick={handleSaveCategory} disabled={isSavingCat} className="text-emerald-700 bg-emerald-100 px-2 py-1 rounded text-xs">
-                  {isSavingCat ? <Loader2 className="w-3 h-3 animate-spin" /> : "Simpan"}
+                <button
+                  onClick={handleSaveCategory}
+                  disabled={isSavingCat}
+                  className="text-emerald-700 bg-emerald-100 px-2 py-1 rounded text-xs"
+                >
+                  {isSavingCat ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Simpan'}
                 </button>
-                <button onClick={() => setIsEditingCategory(false)} className="text-muted-foreground bg-white/50 px-2 py-1 rounded text-xs">
+                <button
+                  onClick={() => setIsEditingCategory(false)}
+                  className="text-muted-foreground bg-white/50 px-2 py-1 rounded text-xs"
+                >
                   Batal
                 </button>
               </div>
@@ -96,11 +316,22 @@ export function RabCategorySection({
               <div className="flex items-center justify-center gap-4">
                 <span>{category.name}</span>
                 <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center absolute right-4 top-1/2 -translate-y-1/2">
-                  <button onClick={() => setIsEditingCategory(true)} className="p-1 text-blue-800 hover:bg-white/20 rounded">
+                  <button
+                    onClick={() => setIsEditingCategory(true)}
+                    className="p-1 text-blue-800 hover:bg-white/20 rounded"
+                  >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
-                  <button onClick={handleDeleteCategory} disabled={isDeletingCat} className="p-1 text-rose-700 hover:bg-white/20 rounded">
-                    {isDeletingCat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  <button
+                    onClick={handleDeleteCategory}
+                    disabled={isDeletingCat}
+                    className="p-1 text-rose-700 hover:bg-white/20 rounded"
+                  >
+                    {isDeletingCat ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -110,10 +341,11 @@ export function RabCategorySection({
       );
     }
 
-    // Kategori Pekerjaan (Depth 1) atau Subkategori (Depth 2+)
     const isDepth1 = depth === 1;
     return (
-      <tr className={`border-y border-border group ${isDepth1 ? 'font-bold bg-muted/40' : 'font-bold bg-muted/10'}`}>
+      <tr
+        className={`border-y border-border group ${isDepth1 ? 'font-bold bg-muted/40' : 'font-bold bg-muted/10'}`}
+      >
         <td className="px-3 py-1.5 border-x border-border/50 text-center">{category.code || ''}</td>
         <td colSpan={9} className="px-3 py-1.5 border-r border-border/50 relative">
           {isEditingCategory ? (
@@ -130,23 +362,67 @@ export function RabCategorySection({
                 placeholder="Nama Kategori/Subkategori"
                 className="flex-1 px-2 py-1 text-xs border rounded bg-background"
               />
-              <button onClick={handleSaveCategory} disabled={isSavingCat} className="text-emerald-600 px-2 py-1 rounded text-xs hover:bg-emerald-50">
-                {isSavingCat ? <Loader2 className="w-3 h-3 animate-spin" /> : "Simpan"}
+              <button
+                onClick={handleSaveCategory}
+                disabled={isSavingCat}
+                className="text-emerald-600 px-2 py-1 rounded text-xs hover:bg-emerald-50"
+              >
+                {isSavingCat ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Simpan'}
               </button>
-              <button onClick={() => setIsEditingCategory(false)} className="text-muted-foreground px-2 py-1 rounded text-xs hover:bg-muted">
+              <button
+                onClick={() => setIsEditingCategory(false)}
+                className="text-muted-foreground px-2 py-1 rounded text-xs hover:bg-muted"
+              >
                 Batal
               </button>
             </div>
           ) : (
             <div className="flex items-center justify-between">
-              <span className={isDepth1 ? 'uppercase' : 'capitalize italic'}>{category.name}</span>
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center pr-2">
-                <button onClick={() => setIsEditingCategory(true)} className="p-1 text-blue-600 hover:bg-background rounded">
-                  <Edit2 className="w-3.5 h-3.5" />
-                </button>
-                <button onClick={handleDeleteCategory} disabled={isDeletingCat} className="p-1 text-rose-600 hover:bg-background rounded">
-                  {isDeletingCat ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-                </button>
+              <div className="flex items-center gap-3">
+                <span className={isDepth1 ? 'uppercase' : 'capitalize italic'}>{category.name}</span>
+                {/* Pending changes badge */}
+                {pendingCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 border border-amber-300 dark:border-amber-600">
+                    <AlertCircle className="w-2.5 h-2.5" />
+                    {pendingCount} belum disimpan
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 pr-2">
+                {/* Bulk save button */}
+                {pendingCount > 0 && (
+                  <button
+                    onClick={handleBulkSave}
+                    disabled={isSavingBulk}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded transition-colors disabled:opacity-50"
+                  >
+                    {isSavingBulk ? (
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <Save className="w-3 h-3" />
+                    )}
+                    Simpan Semua Perubahan
+                  </button>
+                )}
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                  <button
+                    onClick={() => setIsEditingCategory(true)}
+                    className="p-1 text-blue-600 hover:bg-background rounded"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={handleDeleteCategory}
+                    disabled={isDeletingCat}
+                    className="p-1 text-rose-600 hover:bg-background rounded"
+                  >
+                    {isDeletingCat ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -159,20 +435,43 @@ export function RabCategorySection({
     <React.Fragment>
       {renderCategoryRow()}
 
-      {/* Items */}
+      {/* Bulk save error banner */}
+      {bulkError && (
+        <tr>
+          <td colSpan={10} className="px-4 py-2 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
+            <div className="flex items-center gap-2 text-red-700 dark:text-red-400 text-xs">
+              <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+              {bulkError}
+              <button
+                onClick={() => setBulkError(null)}
+                className="ml-auto text-red-400 hover:text-red-600"
+              >
+                ✕
+              </button>
+            </div>
+          </td>
+        </tr>
+      )}
+
+      {/* ─── Existing Items ─────────────────────────────────────────────────── */}
       {category.items.map((item, idx) => {
-        if (editingItemId === item.id) {
+        const dirtyState = dirtyItems.get(item.id);
+
+        if (dirtyState) {
+          // Render dirty (edit) row
           return (
-            <EditItemRow
+            <DirtyItemRow
               key={item.id}
               item={item}
+              dirtyState={dirtyState}
               idx={idx}
-              onRefresh={onRefresh}
-              onCancel={() => setEditingItemId(null)}
+              onChange={handleDirtyChange}
+              onRevert={handleRevertDirty}
             />
           );
         }
 
+        // Render regular read row
         return (
           <React.Fragment key={item.id}>
             <tr className="border-b border-border/30 hover:bg-muted/10 group">
@@ -188,11 +487,15 @@ export function RabCategorySection({
                         Dikurangi
                       </span>
                     )}
+                    {item.status === 'dibatalkan' && (
+                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-gray-100 text-gray-500 dark:bg-gray-500/10 dark:text-gray-400">
+                        Dibatalkan
+                      </span>
+                    )}
                   </div>
-                  {/* Item Actions */}
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
                     <button
-                      onClick={() => setEditingItemId(item.id)}
+                      onClick={() => handleStartEdit(item)}
                       className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
                       title="Edit Item"
                     >
@@ -200,7 +503,9 @@ export function RabCategorySection({
                     </button>
                     {item.status === 'aktif' && (
                       <button
-                        onClick={() => setReportItemId(reportItemId === item.id ? null : item.id)}
+                        onClick={() =>
+                          setReportItemId(reportItemId === item.id ? null : item.id)
+                        }
                         className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded"
                         title="Laporan Progress"
                       >
@@ -219,30 +524,24 @@ export function RabCategorySection({
               <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums">
                 {item.unit_price > 0 ? formatCurrency(item.unit_price).replace('Rp', '').trim() : '-'}
               </td>
-              {/* Jumlah Harga Rp */}
               <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums font-medium">
                 {item.total_price > 0 ? formatCurrency(item.total_price).replace('Rp', '').trim() : '-'}
               </td>
-              {/* Rekapitulasi Rp (Empty for items) */}
               <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 bg-yellow-50/10">
                 -
               </td>
-              {/* Bobot % */}
               <td className="px-3 py-1.5 border-r border-border/50 text-center text-xs align-top pt-2.5">
                 {item.bobot_percentage.toFixed(2)}%
               </td>
-              {/* Progress % */}
               <td className="px-3 py-1.5 border-r border-border/50 text-center text-xs align-top pt-2.5 bg-blue-50/20">
                 <span className="font-semibold text-blue-700 dark:text-blue-300">
                   {item.latest_progress_percentage}%
                 </span>
               </td>
-              {/* Total % */}
               <td className="px-3 py-1.5 border-r border-border/50 text-center text-xs align-top pt-2.5">
                 {item.total_percentage.toFixed(2)}%
               </td>
             </tr>
-            {/* Progress Report Panel */}
             {reportItemId === item.id && (
               <ProgressReportPanel
                 item={item}
@@ -254,10 +553,34 @@ export function RabCategorySection({
         );
       })}
 
-      {/* Add Item Form (Only if depth > 0, we don't want standalone items at Root Level typically, but it's safe to render if needed) */}
-      {depth > 0 && <AddItemRow categoryId={category.id} onRefresh={onRefresh} />}
+      {/* ─── Draft (new) item rows ──────────────────────────────────────────── */}
+      {depth > 0 &&
+        draftItems.map((draft, idx) => (
+          <DraftItemRow
+            key={draft._key}
+            draft={draft}
+            idx={idx}
+            onChange={handleDraftChange}
+            onRemove={handleRemoveDraft}
+          />
+        ))}
 
-      {/* Sub Categories */}
+      {/* ─── Add new item button (Depth > 0 only) ─────────────────────────── */}
+      {depth > 0 && (
+        <tr>
+          <td colSpan={10} className="px-3 py-1.5 border-b border-border/30">
+            <button
+              onClick={handleAddDraftRow}
+              className="inline-flex items-center gap-1.5 text-[11px] text-blue-600 hover:text-blue-800 dark:hover:text-blue-400 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Tambah Baris Item
+            </button>
+          </td>
+        </tr>
+      )}
+
+      {/* ─── Sub Categories ────────────────────────────────────────────────── */}
       {category.children.map((child) => (
         <RabCategorySection
           key={child.id}
@@ -265,37 +588,36 @@ export function RabCategorySection({
           depth={depth + 1}
           onRefresh={onRefresh}
           projectId={projectId}
+          onDirtyChange={onDirtyChange}
         />
       ))}
 
-      {/* Subtotal Row (Hanya ditampilkan pada Depth 1 sesuai struktur) */}
+      {/* ─── Subtotal Row (Depth 1) ───────────────────────────────────────── */}
       {depth === 1 && (
         <tr className="font-bold border-y-2 border-border bg-muted/20 text-xs">
           <td colSpan={5} className="px-3 py-2 border-x border-border/50 text-right">
             Jumlah {category.code || category.name}
           </td>
           <td className="px-3 py-2 border-r border-border/50 text-right">-</td>
-          {/* Rekapitulasi Rp (Total dari semua child dan items di kedalaman ini) */}
           <td className="px-3 py-2 border-r border-border/50 text-right tabular-nums bg-yellow-50/50">
             {formatCurrency(categoryTotal).replace('Rp', '').trim()}
           </td>
           <td className="px-3 py-2 border-r border-border/50 text-center text-muted-foreground">
             {category.total_bobot_percentage.toFixed(2)}%
           </td>
-          <td className="px-3 py-2 border-r border-border/50 text-center">
-            {/* Optional Prog if needed */}
-          </td>
-          <td className="px-3 py-2 border-r border-border/50 text-center">
-            {/* Optional Total if needed */}
-          </td>
+          <td className="px-3 py-2 border-r border-border/50 text-center" />
+          <td className="px-3 py-2 border-r border-border/50 text-center" />
         </tr>
       )}
 
-      {/* Add Sub Category Form 
-          Depth 0: Allow adding Depth 1 (Kategori Pekerjaan)
-          Depth 1: Allow adding Depth 2 (Subkategori) */}
+      {/* ─── Add Sub Category Form ────────────────────────────────────────── */}
       {depth <= 1 && (
-        <AddCategoryForm projectId={projectId} parentId={category.id} onRefresh={onRefresh} level={depth + 1} />
+        <AddCategoryForm
+          projectId={projectId}
+          parentId={category.id}
+          onRefresh={onRefresh}
+          level={depth + 1}
+        />
       )}
     </React.Fragment>
   );

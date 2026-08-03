@@ -61,6 +61,23 @@ export const rabService = {
     });
   },
 
+  async bulkCreateItems(categoryId: number, items: CreateItemPayload[]): Promise<any[]> {
+    return fetchApi<any[]>(`/rab-categories/${categoryId}/items/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    });
+  },
+
+  async bulkUpdateItems(
+    categoryId: number,
+    items: Array<{ id: number } & UpdateItemPayload>,
+  ): Promise<any[]> {
+    return fetchApi<any[]>(`/rab-categories/${categoryId}/items/bulk`, {
+      method: 'PUT',
+      body: JSON.stringify({ items }),
+    });
+  },
+
   // ─── Progress Reports ────────────────────────────────────────────────────────
 
   async createProgressReport(

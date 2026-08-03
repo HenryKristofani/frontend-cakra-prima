@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { RabSummary } from '@/types/rab';
 import { formatCurrency } from '@/utils/formatters';
 import { RabSummaryCards } from './RabSummaryCards';
@@ -34,6 +34,29 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
       setIsRefreshing(false);
     }
   }, [projectId]);
+
+  // ─── beforeunload guard ─────────────────────────────────────────────────────
+  // Track which categories have unsaved changes
+  const dirtyCategories = useRef<Set<number>>(new Set());
+
+  const handleDirtyChange = useCallback((categoryId: number, hasDirty: boolean) => {
+    if (hasDirty) {
+      dirtyCategories.current.add(categoryId);
+    } else {
+      dirtyCategories.current.delete(categoryId);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (dirtyCategories.current.size > 0) {
+        e.preventDefault();
+        e.returnValue = 'Ada perubahan RAB yang belum disimpan. Yakin ingin keluar?';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   const hasNoData = categories.length === 0 && deductions.length === 0;
 
@@ -96,6 +119,7 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
                       onRefresh={refreshData}
                       projectId={projectId}
                       depth={0}
+                      onDirtyChange={handleDirtyChange}
                     />
                   ))}
                   

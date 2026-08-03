@@ -1,11 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { LayoutDashboard, Wallet, Settings, LogOut, Package, CreditCard, FolderKanban } from "lucide-react";
+import { fetchApi } from "@/lib/api";
 
 export function Sidebar({ isOpen }: { isOpen: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -14,6 +16,16 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
     { name: "Projects", href: "/dashboard/projects", icon: FolderKanban },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await fetchApi('/logout', { method: 'POST' });
+    } catch (e) {
+      console.error('Logout error', e);
+    } finally {
+      router.push('/login');
+    }
+  };
 
   return (
     <aside 
@@ -49,7 +61,10 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
       </nav>
 
       <div className="p-4 border-t border-border/10">
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sidebar-foreground/80 hover:bg-sidebar-hover hover:text-red-400 transition-all duration-200">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-sidebar-foreground/80 hover:bg-sidebar-hover hover:text-red-400 transition-all duration-200"
+        >
           <LogOut className="w-5 h-5" />
           Logout
         </button>

@@ -1,80 +1,175 @@
-// 'use client';
+'use client';
 
-// import { useRABState } from './useRABState';
-// import { RABHeader } from './components/RABHeader';
-// import { RABActions } from './components/RABActions';
-// import { CategoryManager } from './components/CategoryManager';
-// import { RABTableSection } from './components/RABTableSection';
-// import { PenguranganSection } from './components/PenguranganSection';
-// import { RABFinalSummary } from './components/RABFinalSummary';
+import { useState, useCallback } from 'react';
+import { RabSummary } from '@/types/rab';
+import { formatCurrency } from '@/utils/formatters';
+import { RabSummaryCards } from './RabSummaryCards';
+import { RabCategorySection } from './RabCategorySection';
+import { RabPenguranganSection } from './RabPenguranganSection';
+import { AddCategoryForm } from './AddCategoryForm';
+import { rabService } from '@/lib/services/rabService';
+import { Loader2 } from 'lucide-react';
 
-// interface RABContainerProps {
-//   projectId: number;
-// }
+interface RabContainerProps {
+  initialData: RabSummary;
+  projectId: number | string;
+}
 
-// export function RABContainer({ projectId }: RABContainerProps) {
-//   const state = useRABState();
+export function RabContainer({ initialData, projectId }: RabContainerProps) {
+  const [data, setData] = useState<RabSummary>(initialData);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-//   return (
-//     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-//       <div className="max-w-full">
-//         {/* Header and Info Cards */}
-//         <RABHeader
-//           totalRAB={state.totalRAB}
-//           totalPengurangan={state.totalPengurangan}
-//           totalAkhir={state.totalAkhir}
-//         />
+  const { categories, deductions, rounded_total, final_total, total_rab_aktif, total_deduction } = data;
 
-//         {/* Action Buttons */}
-//         <RABActions
-//           onExport={state.exportToCSV}
-//           onManageCategory={() => state.setShowCategoryManager(!state.showCategoryManager)}
-//         />
+  const [penguranganExpanded, setPenguranganExpanded] = useState(true);
 
-//         {/* Category Manager */}
-//         {state.showCategoryManager && (
-//           <CategoryManager
-//             categories={state.categories}
-//             editingCategoryId={state.editingCategoryId}
-//             editingCategoryName={state.editingCategoryName}
-//             onStartEdit={state.startEditCategory}
-//             onSaveEdit={state.saveEditCategory}
-//             onCancelEdit={() => state.setEditingCategoryId(null)}
-//             onAddCategory={state.addCategory}
-//             onRemoveCategory={state.removeCategory}
-//             onCategoryNameChange={state.setEditingCategoryName}
-//           />
-//         )}
+  const refreshData = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      const freshData = await rabService.getRabSummary(projectId);
+      setData(freshData);
+    } catch (e) {
+      console.error('Failed to refresh RAB summary', e);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [projectId]);
 
-//         {/* RAB Section */}
-//         <RABTableSection
-//           categories={state.categories}
-//           items={state.items}
-//           expandedCategories={state.expandedCategories}
-//           onToggleCategory={state.toggleCategory}
-//           onAddRowToCategory={state.addRowToCategory}
-//           onDeleteRow={state.deleteRow}
-//           onUpdateItem={state.updateItem}
-//         />
+  const hasNoData = categories.length === 0 && deductions.length === 0;
 
-//         {/* Pengurangan Section */}
-//         <PenguranganSection
-//           showPengurangan={state.showPengurangan}
-//           totalPengurangan={state.totalPengurangan}
-//           penguranganItems={state.penguranganItems}
-//           onToggle={() => state.setShowPengurangan(!state.showPengurangan)}
-//           onAddRow={state.addPenguranganRow}
-//           onDeleteRow={state.deletePenguranganRow}
-//           onUpdateItem={state.updatePenguranganItem}
-//         />
+  return (
+    <div className={`space-y-6 transition-opacity relative ${isRefreshing ? 'opacity-70 pointer-events-none' : ''}`}>
+      {/* Loading overlay for entire container */}
+      {isRefreshing && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center">
+           <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+        </div>
+      )}
 
-//         {/* Final Summary */}
-//         <RABFinalSummary
-//           totalRAB={state.totalRAB}
-//           totalPengurangan={state.totalPengurangan}
-//           totalAkhir={state.totalAkhir}
-//         />
-//       </div>
-//     </div>
-//   );
-// }
+      {/* Summary Cards */}
+      <RabSummaryCards summary={data} />
+
+      {hasNoData ? (
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+          <div className="px-4 py-3 bg-blue-600 text-white">
+            <h2 className="font-bold text-sm tracking-wide uppercase">Rencana Anggaran Biaya</h2>
+          </div>
+          <div className="p-12 text-center text-muted-foreground">
+            <p className="text-lg font-medium">Belum ada data RAB</p>
+            <p className="text-sm mt-1 mb-6">Mulai dengan menambahkan kategori RAB pertama.</p>
+            <table className="w-full max-w-2xl mx-auto">
+              <tbody>
+                 <AddCategoryForm projectId={projectId} onRefresh={refreshData} level={0} />
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Main RAB Flat Table */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col">
+            <div className="px-4 py-3 bg-blue-600 text-white flex justify-between items-center">
+              <h2 className="font-bold text-sm tracking-wide uppercase">Rencana Anggaran Biaya (R.A.B)</h2>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-muted/50 border-b border-border/70 text-muted-foreground text-xs uppercase tracking-wider divide-x divide-border/50">
+                    <th className="px-3 py-3 font-semibold text-center w-10">No</th>
+                    <th className="px-3 py-3 font-semibold text-center">Uraian Pekerjaan</th>
+                    <th className="px-3 py-3 font-semibold text-center w-20">Volume</th>
+                    <th className="px-3 py-3 font-semibold text-center w-16">Sat</th>
+                    <th className="px-3 py-3 font-semibold text-center w-28">Harga Satuan<br/>Rp</th>
+                    <th className="px-3 py-3 font-semibold text-center w-28">Jumlah Harga<br/>Rp</th>
+                    <th className="px-3 py-3 font-semibold text-center w-32 bg-yellow-50/50">Rekapitulasi<br/>Rp</th>
+                    <th className="px-3 py-3 font-semibold text-center w-16">Bobot<br/>%</th>
+                    <th className="px-3 py-3 font-semibold text-center w-16">Prog</th>
+                    <th className="px-3 py-3 font-semibold text-center w-24">Total<br/>%</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/30">
+                  {categories.map((category) => (
+                    <RabCategorySection
+                      key={category.id}
+                      category={category}
+                      onRefresh={refreshData}
+                      projectId={projectId}
+                      depth={0}
+                    />
+                  ))}
+                  
+                  {/* Add Root Category Form (Outside of mapping, to add new Root Category) */}
+                  <AddCategoryForm projectId={projectId} onRefresh={refreshData} level={0} />
+                </tbody>
+                <tfoot>
+                  <tr className="bg-blue-600 text-white font-bold text-sm">
+                    <td colSpan={6} className="px-4 py-3 text-right">
+                      TOTAL RAB AKTIF
+                    </td>
+                    <td className="px-3 py-3 text-right tabular-nums bg-blue-700">
+                      {formatCurrency(total_rab_aktif)}
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      100.00%
+                    </td>
+                    <td className="px-3 py-3 text-center bg-blue-700">
+                      {data.overall_progress_percentage.toFixed(2)}%
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      {data.overall_progress_percentage.toFixed(2)}%
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          {/* Pengurangan Section */}
+          {deductions.length > 0 && (
+            <RabPenguranganSection
+              deductions={deductions}
+              totalDeduction={total_deduction}
+              isExpanded={penguranganExpanded}
+              onToggle={() => setPenguranganExpanded((v) => !v)}
+            />
+          )}
+
+          {/* Final Summary */}
+          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-5 shadow-sm">
+            <div className="flex flex-col items-end gap-1 text-sm">
+              <div className="flex justify-between w-full max-w-sm text-muted-foreground">
+                <span>Total RAB Aktif</span>
+                <span className="tabular-nums font-medium text-foreground">
+                  {formatCurrency(total_rab_aktif)}
+                </span>
+              </div>
+              {total_deduction > 0 && (
+                <div className="flex justify-between w-full max-w-sm text-muted-foreground">
+                  <span>Dikurangi Pengurangan</span>
+                  <span className="tabular-nums font-medium text-rose-600 dark:text-rose-400">
+                    − {formatCurrency(total_deduction)}
+                  </span>
+                </div>
+              )}
+              <div className="w-full max-w-sm border-t border-emerald-300 dark:border-emerald-700 pt-2 mt-1 flex justify-between">
+                <span className="font-bold text-base text-emerald-800 dark:text-emerald-300">
+                  JUMLAH AKHIR
+                </span>
+                <span className="tabular-nums font-bold text-xl text-emerald-700 dark:text-emerald-300">
+                  {formatCurrency(final_total)}
+                </span>
+              </div>
+              {rounded_total !== final_total && (
+                <div className="flex justify-between w-full max-w-sm text-muted-foreground text-xs">
+                  <span>Pembulatan</span>
+                  <span className="tabular-nums">{formatCurrency(rounded_total)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

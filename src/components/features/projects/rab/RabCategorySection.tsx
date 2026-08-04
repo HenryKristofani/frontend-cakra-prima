@@ -8,7 +8,7 @@ import { ProgressReportPanel } from './ProgressReportPanel';
 import { rabService } from '@/lib/services/rabService';
 import { AddCategoryForm } from './AddCategoryForm';
 import { DraftItemRow, DraftItem } from './DraftItemRow';
-import { DirtyItemRow, DirtyItemState } from './DirtyItemRow';
+import { ExistingItemRow, DirtyItemState } from './ExistingItemRow';
 
 interface RabCategorySectionProps {
   category: RabCategory;
@@ -60,6 +60,8 @@ export function RabCategorySection({
   // ─── DIRTY state (existing rows being edited) ──────────────────────────────
   // Map of itemId → current edit state
   const [dirtyItems, setDirtyItems] = useState<Map<number, DirtyItemState>>(new Map());
+  // Set of itemId → full edit mode (status is editable)
+  const [fullEditItems, setFullEditItems] = useState<Set<number>>(new Set());
 
   // ─── Bulk save state ────────────────────────────────────────────────────────
   const [isSavingBulk, setIsSavingBulk] = useState(false);
@@ -94,26 +96,27 @@ export function RabCategorySection({
 
   // ─── Handlers: Dirty items (click pencil icon on existing row) ─────────────
   const handleStartEdit = useCallback((item: RabItem) => {
-    setDirtyItems((prev) => {
-      if (prev.has(item.id)) return prev; // already editing
-      const next = new Map(prev);
-      next.set(item.id, {
-        description: item.description,
-        volume: item.volume.toString(),
-        unit: item.unit,
-        unit_price: item.unit_price.toString(),
-        status: item.status,
-      });
+    setFullEditItems((prev) => {
+      const next = new Set(prev);
+      next.add(item.id);
       return next;
     });
   }, []);
 
-  const handleDirtyChange = useCallback((itemId: number, field: keyof DirtyItemState, value: string) => {
+  const handleDirtyChange = useCallback((item: RabItem, field: keyof DirtyItemState, value: string) => {
     setDirtyItems((prev) => {
-      const existing = prev.get(itemId);
-      if (!existing) return prev;
+      let existing = prev.get(item.id);
+      if (!existing) {
+        existing = {
+          description: item.description,
+          volume: item.volume.toString(),
+          unit: item.unit,
+          unit_price: item.unit_price.toString(),
+          status: item.status,
+        };
+      }
       const next = new Map(prev);
-      next.set(itemId, {
+      next.set(item.id, {
         ...existing,
         [field]: value,
         errors: existing.errors ? { ...existing.errors, [field]: '' } : undefined,
@@ -125,6 +128,11 @@ export function RabCategorySection({
   const handleRevertDirty = useCallback((itemId: number) => {
     setDirtyItems((prev) => {
       const next = new Map(prev);
+      next.delete(itemId);
+      return next;
+    });
+    setFullEditItems((prev) => {
+      const next = new Set(prev);
       next.delete(itemId);
       return next;
     });
@@ -192,6 +200,7 @@ export function RabCategorySection({
         try {
           await rabService.bulkUpdateItems(category.id, payload);
           setDirtyItems(new Map()); // success → clear all dirty
+          setFullEditItems(new Set()); // success → clear full edit states
         } catch (err: any) {
           if (err?.errors) {
             const dirtyEntries = Array.from(dirtyItems.entries());
@@ -456,92 +465,21 @@ export function RabCategorySection({
       {/* ─── Existing Items ─────────────────────────────────────────────────── */}
       {category.items.map((item, idx) => {
         const dirtyState = dirtyItems.get(item.id);
+        const isFullEdit = fullEditItems.has(item.id);
 
-        if (dirtyState) {
-          // Render dirty (edit) row
-          return (
-            <DirtyItemRow
-              key={item.id}
+        return (
+          <React.Fragment key={item.id}>
+            <ExistingItemRow
               item={item}
               dirtyState={dirtyState}
               idx={idx}
-              onChange={handleDirtyChange}
+              isFullEdit={isFullEdit}
+              onQuickChange={handleDirtyChange}
+              onStartFullEdit={handleStartEdit}
               onRevert={handleRevertDirty}
+              onShowProgress={(itemId) => setReportItemId(reportItemId === itemId ? null : itemId)}
+              isShowingProgress={reportItemId === item.id}
             />
-          );
-        }
-
-        // Render regular read row
-        return (
-          <React.Fragment key={item.id}>
-            <tr className="border-b border-border/30 hover:bg-muted/10 group">
-              <td className="px-3 py-1.5 border-x border-border/50 text-center text-xs align-top pt-2.5">
-                {idx + 1}
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-xs align-top pt-2.5">
-                <div className="flex items-start justify-between">
-                  <div>
-                    {item.description}
-                    {item.status === 'dikurangi' && (
-                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-rose-100 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400">
-                        Dikurangi
-                      </span>
-                    )}
-                    {item.status === 'dibatalkan' && (
-                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-gray-100 text-gray-500 dark:bg-gray-500/10 dark:text-gray-400">
-                        Dibatalkan
-                      </span>
-                    )}
-                  </div>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 shrink-0">
-                    <button
-                      onClick={() => handleStartEdit(item)}
-                      className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-                      title="Edit Item"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                    {item.status === 'aktif' && (
-                      <button
-                        onClick={() =>
-                          setReportItemId(reportItemId === item.id ? null : item.id)
-                        }
-                        className="p-1 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded"
-                        title="Laporan Progress"
-                      >
-                        <ListTodo className="w-3 h-3" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5">
-                {item.volume}
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-center text-xs align-top pt-2.5">
-                {item.unit}
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums">
-                {item.unit_price > 0 ? formatCurrency(item.unit_price).replace('Rp', '').trim() : '-'}
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums font-medium">
-                {item.total_price > 0 ? formatCurrency(item.total_price).replace('Rp', '').trim() : '-'}
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 bg-yellow-50/10">
-                -
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-center text-xs align-top pt-2.5">
-                {item.bobot_percentage.toFixed(2)}%
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-center text-xs align-top pt-2.5 bg-blue-50/20">
-                <span className="font-semibold text-blue-700 dark:text-blue-300">
-                  {item.latest_progress_percentage}%
-                </span>
-              </td>
-              <td className="px-3 py-1.5 border-r border-border/50 text-center text-xs align-top pt-2.5">
-                {item.total_percentage.toFixed(2)}%
-              </td>
-            </tr>
             {reportItemId === item.id && (
               <ProgressReportPanel
                 item={item}

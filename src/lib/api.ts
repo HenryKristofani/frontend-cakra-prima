@@ -2,10 +2,11 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | undefined>;
+  responseType?: 'json' | 'blob' | 'response';
 }
 
 export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-  const { params, headers, ...customConfig } = options;
+  const { params, responseType = 'json', headers, ...customConfig } = options;
   
   let url = `${API_BASE}${endpoint}`;
   
@@ -78,6 +79,14 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
 
   if (response.status === 204) {
     return {} as T;
+  }
+
+  if (responseType === 'response') {
+    return response as unknown as T;
+  }
+
+  if (responseType === 'blob') {
+    return (await response.blob()) as unknown as T;
   }
 
   const text = await response.text();

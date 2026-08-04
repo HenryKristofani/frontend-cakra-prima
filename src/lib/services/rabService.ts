@@ -90,4 +90,32 @@ export const rabService = {
       body: JSON.stringify(data),
     });
   },
+  async exportRabExcel(projectId: string | number): Promise<void> {
+    const response = await fetchApi<Response>(`/projects/${projectId}/rab-export`, {
+      method: 'GET',
+      responseType: 'response',
+    });
+    
+    // Convert to blob and download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    
+    // Try to get filename from content-disposition header if available, else fallback
+    const disposition = response.headers.get('content-disposition');
+    let filename = `RAB-Project-${projectId}.xlsx`;
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+    
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
 };

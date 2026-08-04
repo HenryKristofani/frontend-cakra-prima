@@ -8,7 +8,7 @@ import { RabCategorySection } from './RabCategorySection';
 import { RabPenguranganSection } from './RabPenguranganSection';
 import { AddCategoryForm } from './AddCategoryForm';
 import { rabService } from '@/lib/services/rabService';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Download } from 'lucide-react';
 
 interface RabContainerProps {
   initialData: RabSummary;
@@ -18,6 +18,7 @@ interface RabContainerProps {
 export function RabContainer({ initialData, projectId }: RabContainerProps) {
   const [data, setData] = useState<RabSummary>(initialData);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const { categories, deductions, rounded_total, final_total, total_rab_aktif, total_deduction } = data;
 
@@ -34,6 +35,17 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
       setIsRefreshing(false);
     }
   }, [projectId]);
+
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      await rabService.exportRabExcel(projectId);
+    } catch (error: any) {
+      alert('Gagal mengunduh Excel: ' + (error.message || 'Error tidak diketahui'));
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   // ─── beforeunload guard ─────────────────────────────────────────────────────
   // Track which categories have unsaved changes
@@ -93,6 +105,14 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col">
             <div className="px-4 py-3 bg-blue-600 text-white flex justify-between items-center">
               <h2 className="font-bold text-sm tracking-wide uppercase">Rencana Anggaran Biaya (R.A.B)</h2>
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white text-blue-700 hover:bg-blue-50 rounded shadow-sm disabled:opacity-70 transition-colors"
+              >
+                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                Export Excel
+              </button>
             </div>
 
             <div className="overflow-x-auto">

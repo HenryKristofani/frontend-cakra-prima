@@ -126,7 +126,7 @@ export function LabaRugiContainer({ projectId }: LabaRugiContainerProps) {
               <tr className="bg-muted/50 border-b border-border/80">
                 <th className="px-4 py-3 text-center text-xs font-semibold w-12 border-x border-border/50">No</th>
                 <th className="px-4 py-3 text-left text-xs font-semibold border-r border-border/50">Uraian Pekerjaan</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold w-36 border-r border-border/50">Rencana (RAP)</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold w-36 border-r border-border/50">Jumlah (RAP)</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold w-36 border-r border-border/50">Realisasi (KAS)</th>
                 <th className="px-4 py-3 text-right text-xs font-semibold w-36 border-r border-border/50">Selisih</th>
                 <th className="px-4 py-3 text-center text-xs font-semibold w-28 border-r border-border/50">Status</th>

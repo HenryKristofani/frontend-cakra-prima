@@ -11,7 +11,7 @@ export interface RapItem {
   total_price: number;          // volume × effective_unit_price
   total_realisasi: number;      // SUM(transactions.expense) WHERE rap_item_id = id
   selisih_laba_rugi: number;    // total_price - total_realisasi
-  potongan_percentage: number;
+  pajak_percentage: number;
   sort_order: number;
   source_rab_item_id?: number | null;
   source_rab_item?: {
@@ -35,13 +35,13 @@ export interface RapCategory {
 export interface RapSetting {
   id?: number;
   project_id: number | null;
-  potongan_percentage: number;
+  pajak_percentage: number;
 }
 
 export interface RapSettingResponse {
   project_setting: RapSetting | null;
   global_setting: RapSetting | null;
-  effective_potongan_percentage: number;
+  effective_pajak_percentage: number;
 }
 
 // ─── Form payload types ──────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ export interface LabaRugiSummary {
   total_realisasi: number;
   total_selisih: number;
   status_label: 'untung' | 'rugi' | 'impas';
-  potongan_percentage: number;
+  pajak_percentage: number;
 }
 
 export interface LabaRugiResponse {

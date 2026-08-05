@@ -20,7 +20,7 @@ const SATUANS = ['m', 'm2', 'm3', 'm4', 'Unit', 'Ls', 'Titik', 'bh', 'ls', 'kg',
 interface RapDraftItemRowProps {
   draft: RapDraftItem;
   idx: number;
-  potonganPct: number;
+  pajakPct: number;
   onChange: (key: string, field: keyof RapDraftItem, value: string) => void;
   onRemove: (key: string) => void;
 }
@@ -32,12 +32,12 @@ interface RapDraftItemRowProps {
  */
 export const RapDraftItemRow = React.memo(function RapDraftItemRow({
   draft,
-  potonganPct,
+  pajakPct,
   onChange,
   onRemove,
 }: RapDraftItemRowProps) {
   const rawTotal = (parseFloat(draft.volume) || 0) * (parseFloat(draft.unit_price) || 0);
-  const effectiveUnitPrice = (parseFloat(draft.unit_price) || 0) * (1 - potonganPct / 100);
+  const effectiveUnitPrice = (parseFloat(draft.unit_price) || 0) * (1 + pajakPct / 100);
   const effectiveTotal = (parseFloat(draft.volume) || 0) * effectiveUnitPrice;
 
   const inputBase =
@@ -114,10 +114,9 @@ export const RapDraftItemRow = React.memo(function RapDraftItemRow({
         )}
       </td>
 
-      {/* Harga Efektif (after potongan) */}
-      {/* Harga Efektif (Read only) */}
-      <td className="px-3 py-2 border-r border-emerald-200/50 dark:border-emerald-800/50 text-right align-top pt-3 tabular-nums w-28 bg-emerald-100/30 dark:bg-emerald-900/30">
-        {effectiveUnitPrice > 0
+      {/* Harga Efektif (after pajak) */}
+      <td className={`px-3 py-1.5 border-r border-emerald-200/50 dark:border-emerald-800/50 text-right text-xs align-top pt-2.5 tabular-nums ${pajakPct > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-emerald-700/60 dark:text-emerald-400/60'}`}>
+        {pajakPct > 0
           ? formatCurrency(effectiveUnitPrice).replace('Rp', '').trim()
           : '-'}
       </td>

@@ -20,7 +20,7 @@ interface RapExistingItemRowProps {
   item: RapItem;
   dirtyState?: RapDirtyItemState;
   idx: number;
-  potonganPct: number;
+  pajakPct: number;
   onQuickChange: (item: RapItem, field: keyof RapDirtyItemState, value: string) => void;
   onRevert: (itemId: number) => void;
 }
@@ -36,7 +36,7 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   item,
   dirtyState,
   idx,
-  potonganPct,
+  pajakPct,
   onQuickChange,
   onRevert,
 }: RapExistingItemRowProps) {
@@ -53,7 +53,7 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   // Live preview — use dirty values if editing, otherwise use server-computed values
   const parsedVolume = parseFloat(volume) || 0;
   const parsedUnitPrice = parseFloat(unitPrice) || 0;
-  const effectiveUnitPriceLive = parsedUnitPrice * (1 - potonganPct / 100);
+  const effectiveUnitPriceLive = parsedUnitPrice * (1 + pajakPct / 100);
   const totalLive = parsedVolume * effectiveUnitPriceLive;
 
   const rowClass = isDirty
@@ -161,9 +161,9 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
         {errors?.unit_price && <p className="text-[10px] text-red-500 mt-0.5">{errors.unit_price}</p>}
       </td>
 
-      {/* Harga Efektif (preview setelah potongan) */}
-      <td className={`px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums ${potonganPct > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
-        {potonganPct > 0
+      {/* Harga Efektif (preview setelah pajak) */}
+      <td className={`px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums ${pajakPct > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
+        {pajakPct > 0
           ? formatCurrency(effectiveUnitPriceLive).replace('Rp', '').trim()
           : '-'}
       </td>

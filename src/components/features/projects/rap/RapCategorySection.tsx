@@ -12,7 +12,7 @@ import { RapExistingItemRow, RapDirtyItemState } from './RapExistingItemRow';
 interface RapCategorySectionProps {
   category: RapCategory;
   depth?: number;
-  potonganPct: number;
+  pajakPct: number;
   onRefresh: () => Promise<void>;
   projectId: number | string;
   onDirtyChange?: (categoryId: number, hasDirty: boolean) => void;
@@ -36,7 +36,7 @@ function newDraft(): RapDraftItem {
 export function RapCategorySection({
   category,
   depth = 0,
-  potonganPct,
+  pajakPct,
   onRefresh,
   projectId,
   onDirtyChange,
@@ -424,7 +424,7 @@ export function RapCategorySection({
             item={item}
             dirtyState={dirtyState}
             idx={idx}
-            potonganPct={potonganPct}
+            pajakPct={pajakPct}
             onQuickChange={handleDirtyChange}
             onRevert={handleRevertDirty}
           />
@@ -438,7 +438,7 @@ export function RapCategorySection({
             key={draft._key}
             draft={draft}
             idx={idx}
-            potonganPct={potonganPct}
+            pajakPct={pajakPct}
             onChange={handleDraftChange}
             onRemove={handleRemoveDraft}
           />
@@ -465,7 +465,7 @@ export function RapCategorySection({
           key={child.id}
           category={child}
           depth={depth + 1}
-          potonganPct={potonganPct}
+          pajakPct={pajakPct}
           onRefresh={onRefresh}
           projectId={projectId}
           onDirtyChange={onDirtyChange}

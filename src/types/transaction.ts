@@ -20,6 +20,7 @@ export interface Transaction {
   account_id?: number | null;
   project_id?: number | null;
   user_id?: number | null;
+  rap_item_id?: number | null;
   company?: string | null;
   description: string;
   payment_method: 'cash' | 'rek';
@@ -29,6 +30,7 @@ export interface Transaction {
   account?: Account | null;
   project?: Project | null;
   user?: { id: number; name: string } | null;
+  rap_item?: { id: number; description: string } | null;
   created_at?: string;
   updated_at?: string;
 }

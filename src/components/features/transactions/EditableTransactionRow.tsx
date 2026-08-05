@@ -1,8 +1,9 @@
 "use client";
 
 import { Loader2, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Transaction, Project, Account } from "@/types/transaction";
+import { fetchApi } from "@/lib/api";
 
 interface EditableTransactionRowProps {
   trx: Transaction;
@@ -10,6 +11,8 @@ interface EditableTransactionRowProps {
   onDelete: (id: number) => Promise<void>;
   projects?: Project[];
   accounts?: Account[];
+  lockedProjectId?: number | string;
+  rapItems?: Array<{ id: number; description: string }>;
 }
 
 export function EditableTransactionRow({
@@ -18,6 +21,8 @@ export function EditableTransactionRow({
   onDelete,
   projects = [],
   accounts = [],
+  lockedProjectId,
+  rapItems = [],
 }: EditableTransactionRowProps) {
   const [date, setDate] = useState(trx.date?.split("T")[0] || "");
   const [projectId, setProjectId] = useState<string>(trx.project_id ? String(trx.project_id) : "");
@@ -33,6 +38,24 @@ export function EditableTransactionRow({
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Sync projectId when projects load, but only if it matches a valid project
+  useEffect(() => {
+    if (projects.length > 0 && trx.project_id) {
+      // Ensure the project_id exists in the loaded projects
+      if (projects.some(p => p.id === trx.project_id)) {
+        setProjectId(String(trx.project_id));
+      }
+    }
+  }, [projects, trx.project_id]);
+
+  // Make sure if the transaction already has a rap_item, it is included in the options
+  const allRapItems = [...rapItems];
+  if (trx.rap_item && !allRapItems.find(i => i.id === trx.rap_item?.id)) {
+    allRapItems.push(trx.rap_item);
+  }
+
+  const [rapItemId, setRapItemId] = useState<string>(trx.rap_item_id ? String(trx.rap_item_id) : "");
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -45,6 +68,7 @@ export function EditableTransactionRow({
         payment_method: payment,
         income: income ? Number(income) : 0,
         expense: expense ? Number(expense) : 0,
+        rap_item_id: rapItemId ? Number(rapItemId) : null,
       });
     } catch (e) {
       console.error(e);
@@ -144,9 +168,30 @@ export function EditableTransactionRow({
           className="w-full min-w-[120px] bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-rose-700 dark:text-rose-400 placeholder:text-rose-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </td>
-      <td className="px-4 py-3 font-semibold text-sm">
+      <td className="px-4 py-3 font-semibold text-sm text-right whitespace-nowrap">
         {trx.rekap_saldo !== undefined ? trx.rekap_saldo.toLocaleString("id-ID") : "-"}
       </td>
+      {lockedProjectId && (
+        <td className="px-4 py-3">
+          {/* RAP Item dropdown — tampil hanya kalau project punya RAP */}
+          {allRapItems.length > 0 ? (
+            <select
+              value={rapItemId}
+              onChange={(e) => setRapItemId(e.target.value)}
+              className="w-full min-w-[160px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+            >
+              <option value="">-- Tanpa tag RAP --</option>
+              {allRapItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.description}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-xs text-muted-foreground/40">-</span>
+          )}
+        </td>
+      )}
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
           <button

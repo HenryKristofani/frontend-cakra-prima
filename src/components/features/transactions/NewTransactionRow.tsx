@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Transaction, Project, Account } from "@/types/transaction";
+import { fetchApi } from "@/lib/api";
 
 interface NewTransactionRowProps {
   onAdd: (data: Omit<Transaction, "id">) => Promise<void>;
@@ -11,9 +12,10 @@ interface NewTransactionRowProps {
   accounts?: Account[];
   lockedProjectId?: number | string;
   lockedProjectName?: string;
+  rapItems?: Array<{ id: number; description: string }>;
 }
 
-export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedProjectId, lockedProjectName }: NewTransactionRowProps) {
+export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedProjectId, lockedProjectName, rapItems = [] }: NewTransactionRowProps) {
   const searchParams = useSearchParams();
   const year = searchParams.get('year');
   const month = searchParams.get('month');
@@ -42,6 +44,9 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
   const [expense, setExpense] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // RAP item dropdown
+  const [rapItemId, setRapItemId] = useState<string>("");
+
   const handleSubmit = async () => {
     if (!date || !description) return alert("Tanggal dan Deskripsi wajib diisi");
     setIsSubmitting(true);
@@ -55,6 +60,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
         payment_method: payment,
         income: income ? Number(income) : 0,
         expense: expense ? Number(expense) : 0,
+        rap_item_id: rapItemId ? Number(rapItemId) : null,
       });
       setDate(initialDate);
       if (!lockedProjectId) setProjectId("");
@@ -64,6 +70,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
       setPayment("cash");
       setIncome("");
       setExpense("");
+      setRapItemId("");
     } catch (e) {
       console.error(e);
       alert("Gagal menambahkan transaksi");
@@ -156,7 +163,30 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
           className="w-full min-w-[120px] bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-rose-700 dark:text-rose-400 placeholder:text-rose-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </td>
-      <td className="px-4 py-3 text-xs text-muted-foreground text-center">-</td>
+      {/* Rekap Saldo — always dash for new row (calculated server-side) */}
+      <td className="px-4 py-3 text-xs text-muted-foreground text-right">-</td>
+      
+      {lockedProjectId && (
+        <td className="px-4 py-3">
+          {rapItems.length > 0 ? (
+            <select
+              value={rapItemId}
+              onChange={(e) => setRapItemId(e.target.value)}
+              className="w-full min-w-[160px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+            >
+              <option value="">-- Tanpa tag RAP --</option>
+              {rapItems.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.description}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="text-xs text-muted-foreground/40">-</span>
+          )}
+        </td>
+      )}
+      
       <td className="px-4 py-3 text-right">
         <button
           onClick={handleSubmit}

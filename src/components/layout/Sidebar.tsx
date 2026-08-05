@@ -11,7 +11,7 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Kas Kantor", href: "/dashboard/kas", icon: Wallet },
+    { name: "Kas Buku Besar", href: "/dashboard/kas", icon: Wallet },
     { name: "Hutang", href: "/dashboard/hutang", icon: CreditCard },
     { name: "Projects", href: "/dashboard/projects", icon: FolderKanban },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },

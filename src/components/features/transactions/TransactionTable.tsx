@@ -4,6 +4,7 @@ import { Search, Loader2, FileSpreadsheet } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Transaction, Project, Account } from "@/types/transaction";
+import { fetchApi } from "@/lib/api";
 import { NewTransactionRow } from "./NewTransactionRow";
 import { EditableTransactionRow } from "./EditableTransactionRow";
 
@@ -45,18 +46,23 @@ export function TransactionTable({
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [rapItems, setRapItems] = useState<Array<{ id: number; description: string }>>([]);
 
   useEffect(() => {
-    fetch(`${API_BASE}/projects`)
-      .then((res) => res.json())
+    fetchApi<Project[]>('/projects')
       .then((data) => setProjects(Array.isArray(data) ? data : []))
       .catch((e) => console.error("Failed to load projects", e));
 
-    fetch(`${API_BASE}/accounts`)
-      .then((res) => res.json())
+    fetchApi<Account[]>('/accounts')
       .then((data) => setAccounts(Array.isArray(data) ? data : []))
       .catch((e) => console.error("Failed to load accounts", e));
-  }, []);
+      
+    if (lockedProjectId) {
+      fetchApi<Array<{ id: number; description: string }>>(`/projects/${lockedProjectId}/rap-items`)
+        .then((data) => setRapItems(Array.isArray(data) ? data : []))
+        .catch((e) => console.error("Failed to load rap items", e));
+    }
+  }, [lockedProjectId]);
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -129,6 +135,9 @@ export function TransactionTable({
               <th className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">Pemasukan</th>
               <th className="px-4 py-3 font-medium text-rose-600 dark:text-rose-500">Pengeluaran</th>
               <th className="px-4 py-3 font-medium">Rekap Saldo</th>
+              {lockedProjectId && (
+                <th className="px-4 py-3 font-medium">Item RAP</th>
+              )}
               <th className="px-4 py-3 font-medium text-right">Aksi</th>
             </tr>
           </thead>
@@ -139,6 +148,7 @@ export function TransactionTable({
               accounts={accounts} 
               lockedProjectId={lockedProjectId}
               lockedProjectName={lockedProjectName}
+              rapItems={rapItems}
             />
             {transactions.map((trx) => (
               <EditableTransactionRow
@@ -148,6 +158,8 @@ export function TransactionTable({
                 onDelete={deleteTransaction}
                 projects={projects}
                 accounts={accounts}
+                lockedProjectId={lockedProjectId}
+                rapItems={rapItems}
               />
             ))}
           </tbody>

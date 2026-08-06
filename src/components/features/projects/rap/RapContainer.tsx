@@ -103,14 +103,20 @@ export function RapContainer({ projectId }: RapContainerProps) {
     }
   };
 
-  const calculateTotalRencana = () => {
-    let total = 0;
+  const calculateTotals = () => {
+    let totalRap = 0;
+    let totalRab = 0;
     const calcCat = (cat: RapCategory) => {
-      cat.items.forEach(item => total += item.total_price);
+      cat.items.forEach(item => {
+        totalRap += item.total_price;
+        if (item.source_rab_item) {
+          totalRab += (item.volume * item.source_rab_item.unit_price);
+        }
+      });
       cat.children.forEach(calcCat);
     };
     categories.forEach(calcCat);
-    return total;
+    return { totalRap, totalRab };
   };
 
   if (isLoading) {
@@ -131,7 +137,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
 
   const effectivePajak = setting?.effective_pajak_percentage ?? 0;
   const isCustomSetting = !!setting?.project_setting;
-  const totalRencana = calculateTotalRencana();
+  const { totalRap, totalRab } = calculateTotals();
 
   return (
     <div className="space-y-6">
@@ -144,7 +150,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground mb-1">Total Rencana Biaya</p>
-              <p className="text-2xl font-bold">{formatCurrency(totalRencana)}</p>
+              <p className="text-2xl font-bold">{formatCurrency(totalRap)}</p>
             </div>
           </div>
           
@@ -250,8 +256,9 @@ export function RapContainer({ projectId }: RapContainerProps) {
           </button>
         </div>
       ) : (
-        <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <>
+          <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="bg-muted/50 border-b border-border/80">
@@ -283,9 +290,46 @@ export function RapContainer({ projectId }: RapContainerProps) {
                   onRefresh={fetchData}
                 />
               </tbody>
+              <tfoot>
+                <tr className="bg-orange-600 dark:bg-orange-700 text-white font-bold text-sm">
+                  <td colSpan={8} className="px-4 py-3 text-right">
+                    TOTAL RAP AKTIF
+                  </td>
+                  <td className="px-3 py-3 text-right tabular-nums bg-orange-700 dark:bg-orange-800 border-l border-orange-500/30">
+                    {formatCurrency(totalRap)}
+                  </td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
+        
+        {/* Final Summary */}
+        <div className="rounded-xl border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-950/20 p-5 shadow-sm">
+          <div className="flex flex-col items-end gap-1 text-sm">
+            <div className="flex justify-between w-full max-w-sm text-muted-foreground">
+              <span>Total RAB Aktif</span>
+              <span className="tabular-nums font-medium text-foreground">
+                {formatCurrency(totalRab)}
+              </span>
+            </div>
+            <div className="flex justify-between w-full max-w-sm text-muted-foreground">
+              <span>Total RAP Aktif</span>
+              <span className="tabular-nums font-medium text-foreground">
+                {formatCurrency(totalRap)}
+              </span>
+            </div>
+            <div className="w-full max-w-sm border-t border-orange-300 dark:border-orange-700 pt-2 mt-1 flex justify-between">
+              <span className="font-bold text-base text-orange-800 dark:text-orange-300">
+                JUMLAH AKHIR RAP
+              </span>
+              <span className="tabular-nums font-bold text-xl text-orange-700 dark:text-orange-300">
+                {formatCurrency(totalRap)}
+              </span>
+            </div>
+          </div>
+        </div>
+        </>
       )}
     </div>
   );

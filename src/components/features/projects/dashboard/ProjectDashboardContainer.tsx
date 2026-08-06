@@ -8,9 +8,11 @@ import Link from "next/link";
 interface ProjectDashboardContainerProps {
   project: Project;
   initialSummary: TransactionSummary;
+  rabSummary?: any;
+  labaRugi?: any;
 }
 
-export function ProjectDashboardContainer({ project, initialSummary }: ProjectDashboardContainerProps) {
+export function ProjectDashboardContainer({ project, initialSummary, rabSummary, labaRugi }: ProjectDashboardContainerProps) {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4 mb-6">
@@ -38,7 +40,12 @@ export function ProjectDashboardContainer({ project, initialSummary }: ProjectDa
         </div>
       </div>
 
-      <ProjectSummaryCards project={project} summary={initialSummary} />
+      <ProjectSummaryCards 
+        project={project} 
+        summary={initialSummary} 
+        rabSummary={rabSummary}
+        labaRugi={labaRugi}
+      />
 
       {/* Additional sections for project specific features can go here later */}
     </div>

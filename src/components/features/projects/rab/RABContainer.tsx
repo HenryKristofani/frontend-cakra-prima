@@ -158,7 +158,7 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
                       100.00%
                     </td>
                     <td className="px-3 py-3 text-center bg-blue-700">
-                      {data.overall_progress_percentage.toFixed(2)}%
+                      {/* {data.overall_progress_percentage.toFixed(2)}% */}
                     </td>
                     <td className="px-3 py-3 text-center">
                       {data.overall_progress_percentage.toFixed(2)}%

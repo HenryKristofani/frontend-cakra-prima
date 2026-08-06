@@ -6,11 +6,15 @@ import Link from "next/link";
 interface ProjectSummaryCardsProps {
   project: Project;
   summary: TransactionSummary;
+  rabSummary?: any;
+  labaRugi?: any;
 }
 
-export function ProjectSummaryCards({ project, summary }: ProjectSummaryCardsProps) {
-  // TODO: Replace with actual RAB/Progress data from project API when available
-  const mockProgress = 0; // Default or mock progress percentage
+export function ProjectSummaryCards({ project, summary, rabSummary, labaRugi }: ProjectSummaryCardsProps) {
+  const progressRAB = rabSummary?.overall_progress_percentage ?? 0;
+  const totalRAB = rabSummary?.rounded_total ?? rabSummary?.final_total ?? 0;
+  const totalRAP = labaRugi?.summary?.total_rencana ?? 0;
+  const labaRugiAmount = labaRugi?.summary?.total_selisih ?? 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -40,7 +44,12 @@ export function ProjectSummaryCards({ project, summary }: ProjectSummaryCardsPro
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-1">Rencana Anggaran Biaya (RAB)</p>
-            <p className="text-3xl font-bold">{mockProgress}%</p>
+            <p className="text-2xl font-bold whitespace-nowrap">
+              {totalRAB > 0 ? formatCurrency(totalRAB) : "-"}
+            </p>
+            <p className="text-sm font-semibold text-blue-600 dark:text-blue-500 mt-1">
+              Progres: {progressRAB.toFixed(2)}%
+            </p>
           </div>
           <div className="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-500">
             <PieChart className="w-6 h-6" />
@@ -61,7 +70,9 @@ export function ProjectSummaryCards({ project, summary }: ProjectSummaryCardsPro
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-1">Rencana Anggaran Pelaksanaan (RAP)</p>
-            <p className="text-3xl font-bold">-</p>
+            <p className="text-3xl font-bold">
+              {totalRAP > 0 ? formatCurrency(totalRAP) : "-"}
+            </p>
           </div>
           <div className="w-12 h-12 rounded-full bg-orange-500/10 flex items-center justify-center text-orange-600 dark:text-orange-500">
             <FileText className="w-6 h-6" />
@@ -82,7 +93,9 @@ export function ProjectSummaryCards({ project, summary }: ProjectSummaryCardsPro
         <div className="flex items-start justify-between mb-4">
           <div>
             <p className="text-sm font-medium text-muted-foreground mb-1">Laba / Rugi (RAP vs KAS)</p>
-            <p className="text-3xl font-bold">-</p>
+            <p className={`text-3xl font-bold ${labaRugiAmount > 0 ? 'text-emerald-600 dark:text-emerald-500' : labaRugiAmount < 0 ? 'text-rose-600 dark:text-rose-500' : ''}`}>
+              {labaRugiAmount !== 0 ? formatCurrency(labaRugiAmount) : "-"}
+            </p>
           </div>
           <div className="w-12 h-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-500">
             <Calculator className="w-6 h-6" />

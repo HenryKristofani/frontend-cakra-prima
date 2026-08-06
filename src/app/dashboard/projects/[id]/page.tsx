@@ -1,5 +1,7 @@
 import { projectService } from "@/lib/services/projectService";
 import { transactionService } from "@/lib/services/transactionService";
+import { rabService } from "@/lib/services/rabService";
+import { rapService } from "@/lib/services/rapService";
 import { ProjectDashboardContainer } from "@/components/features/projects/dashboard/ProjectDashboardContainer";
 import { notFound } from "next/navigation";
 
@@ -18,16 +20,25 @@ export default async function ProjectDashboardPage({
 
   try {
     // Fetch project details and transaction summary specific to this project
-    const [project, initialSummary] = await Promise.all([
+    const [project, initialSummary, rabSummary, labaRugi] = await Promise.all([
       projectService.getProjectById(id),
-      transactionService.getSummary({ project_id: id })
+      transactionService.getSummary({ project_id: id }),
+      rabService.getRabSummary(id).catch(() => null),
+      rapService.getLabaRugi(id).catch(() => null),
     ]);
 
     if (!project) {
       notFound();
     }
 
-    return <ProjectDashboardContainer project={project} initialSummary={initialSummary} />;
+    return (
+      <ProjectDashboardContainer 
+        project={project} 
+        initialSummary={initialSummary}
+        rabSummary={rabSummary}
+        labaRugi={labaRugi}
+      />
+    );
   } catch (error) {
     console.error("Failed to load project dashboard:", error);
     notFound();

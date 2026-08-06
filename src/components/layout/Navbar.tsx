@@ -1,7 +1,8 @@
 "use client";
 
-import { Bell, Search, UserCircle, Menu } from "lucide-react";
+import { Bell, Search, UserCircle, Menu, Calendar } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 
 export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
   const router = useRouter();
@@ -10,6 +11,19 @@ export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
 
   const currentYear = searchParams.get("year") || "all";
   const currentMonth = searchParams.get("month") || "all";
+
+  const [todayDate, setTodayDate] = useState("");
+
+  useEffect(() => {
+    setTodayDate(
+      new Date().toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    );
+  }, []);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -86,6 +100,12 @@ export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
       </div>
       
       <div className="flex items-center gap-4">
+        {/* Date Display */}
+        <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full border border-border/50">
+          <Calendar className="w-4 h-4 text-brand" />
+          <span className="font-medium" suppressHydrationWarning>{todayDate}</span>
+        </div>
+
         <button className="relative p-2 text-muted-foreground hover:bg-muted rounded-full transition-colors">
           <Bell className="w-5 h-5" />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-background"></span>

@@ -2,6 +2,7 @@ import { Project, TransactionSummary } from "@/types/transaction";
 import { formatCurrency } from "@/utils/formatters";
 import { Wallet, PieChart, FileText, Calculator } from "lucide-react";
 import Link from "next/link";
+import { ProgressChart } from "./ProgressChart";
 
 interface ProjectSummaryCardsProps {
   project: Project;
@@ -17,7 +18,9 @@ export function ProjectSummaryCards({ project, summary, rabSummary, labaRugi }: 
   const labaRugiAmount = labaRugi?.summary?.total_selisih ?? 0;
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <>
+      <ProgressChart projectId={project.id} currentProgress={progressRAB} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       {/* Kas Card */}
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm flex flex-col justify-between">
         <div className="flex items-start justify-between mb-4">
@@ -111,5 +114,6 @@ export function ProjectSummaryCards({ project, summary, rabSummary, labaRugi }: 
         </div>
       </div>
     </div>
+    </>
   );
 }

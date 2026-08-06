@@ -17,6 +17,12 @@ export const rabService = {
     });
   },
 
+  async getProgressTimeline(projectId: string | number, groupBy: 'day' | 'week' | 'month' = 'day'): Promise<{ data: { date: string, overall_progress_percentage: number }[] }> {
+    return fetchApi(`/projects/${projectId}/progress-timeline?group_by=${groupBy}`, {
+      method: 'GET',
+    });
+  },
+
   // ─── Categories ─────────────────────────────────────────────────────────────
 
   async createCategory(projectId: string | number, data: CreateCategoryPayload): Promise<any> {

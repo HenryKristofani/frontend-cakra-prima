@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { rabService } from "@/lib/services/rabService";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 interface ProgressChartProps {
   projectId: string | number;
@@ -39,9 +40,17 @@ export function ProgressChart({ projectId, currentProgress }: ProgressChartProps
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
         <div>
           <p className="text-sm font-medium text-muted-foreground mb-1">Progress Project</p>
-          <p className="text-4xl font-bold text-blue-600 dark:text-blue-500">
-            {currentProgress.toFixed(1)}%
-          </p>
+          <div className="flex items-end gap-3">
+            <p className="text-4xl font-bold text-blue-600 dark:text-blue-500">
+              {currentProgress.toFixed(1)}%
+            </p>
+            <Link 
+              href={`/dashboard/projects/${projectId}/progress`}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-1 font-medium transition-colors"
+            >
+              Lihat Detail &rarr;
+            </Link>
+          </div>
         </div>
         
         <div className="flex bg-muted rounded-lg p-1 w-fit">

@@ -35,7 +35,7 @@ export default async function ProjectKasPage({
 
   const [initialData, initialSummary] = await Promise.all([
     transactionService.getTransactions(filters),
-    transactionService.getSummary({ project_id: id }),
+    transactionService.getSummary(filters),
   ]);
 
   return (

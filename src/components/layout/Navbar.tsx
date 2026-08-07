@@ -2,15 +2,22 @@
 
 import { Bell, Search, UserCircle, Menu, Calendar } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
 
-  const currentYear = searchParams.get("year") || "all";
-  const currentMonth = searchParams.get("month") || "all";
+  const now = new Date();
+  const defaultYear = String(now.getFullYear());
+  const defaultMonth = String(now.getMonth() + 1);
+
+  // Only default to current period when on Kas pages (global header used elsewhere)
+  const isKasPage = pathname.includes("/kas");
+
+  const currentYear = searchParams.get("year") ?? "all";
+  const currentMonth = searchParams.get("month") ?? "all";
 
   const [todayDate, setTodayDate] = useState("");
 
@@ -46,6 +53,33 @@ export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
     }
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
+
+  // Ref to ensure we only initialize defaults once per mounted Navbar
+  const initializedRef = useRef(false);
+
+  // If we're on a Kas page and the URL doesn't contain year/month, set them to current
+  useEffect(() => {
+    if (!isKasPage) return;
+    if (initializedRef.current) return;
+
+    const params = new URLSearchParams(searchParams.toString());
+    let changed = false;
+    if (!params.has("year")) {
+      params.set("year", defaultYear);
+      changed = true;
+    }
+    if (!params.has("month")) {
+      params.set("month", defaultMonth);
+      changed = true;
+    }
+
+    if (changed) {
+      // Replace to avoid polluting browsing history
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+
+    initializedRef.current = true;
+  }, [isKasPage, pathname, searchParams, router, defaultYear, defaultMonth]);
 
   return (
     <header className="h-16 bg-background/80 backdrop-blur-md border-b border-border flex items-center justify-between px-6 sticky top-0 z-10">

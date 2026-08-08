@@ -1,6 +1,10 @@
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 export default function Layout({ children }: { children: ReactNode }) {
-  return <DashboardLayout>{children}</DashboardLayout>;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardLayout>{children}</DashboardLayout>
+    </Suspense>
+  );
 }

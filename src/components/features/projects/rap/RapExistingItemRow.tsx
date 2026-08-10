@@ -53,7 +53,7 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   // Live preview — use dirty values if editing, otherwise use server-computed values
   const parsedVolume = parseFloat(volume) || 0;
   const parsedUnitPrice = parseFloat(unitPrice) || 0;
-  const effectiveUnitPriceLive = parsedUnitPrice * (1 + pajakPct / 100);
+  const effectiveUnitPriceLive = parsedUnitPrice * (1 - pajakPct / 100);
   const totalLive = parsedVolume * effectiveUnitPriceLive;
 
   const rowClass = isDirty
@@ -162,7 +162,7 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
       </td>
 
       {/* Harga Efektif (preview setelah pajak) */}
-      <td className={`px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums ${pajakPct > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'}`}>
+      <td className={`px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums ${pajakPct > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
         {pajakPct > 0
           ? formatCurrency(effectiveUnitPriceLive).replace('Rp', '').trim()
           : '-'}

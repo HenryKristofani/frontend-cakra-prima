@@ -268,7 +268,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
                   <th className="px-3 py-2 text-center text-xs font-semibold w-20 border-r border-border/50">Sat</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-28 border-r border-border/50">Harga RAB</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-28 border-r border-border/50">Harga RAP</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-28 border-r border-border/50 text-blue-700 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20">Hrg Efektif ({effectivePajak.toFixed(2)} %)</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28 border-r border-border/50 text-orange-700 dark:text-orange-400 bg-orange-50/50 dark:bg-orange-950/20">Hrg Efektif ({effectivePajak.toFixed(2)} %)</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-32 border-r border-border/50">Jumlah RAB</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-32 border-r border-border/50">Jumlah RAP</th>
                 </tr>

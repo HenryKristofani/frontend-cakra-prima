@@ -20,6 +20,7 @@ export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDel
   const [status, setStatus] = useState<"aktif" | "nonaktif">(
     project.status === "nonaktif" ? "nonaktif" : "aktif"
   );
+  const [isIsolatedCash, setIsIsolatedCash] = useState(project.is_isolated_cash ?? false);
   
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -30,6 +31,18 @@ export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDel
     }
   };
 
+  const handleToggleIsolatedCash = (checked: boolean) => {
+    const action = checked ? "MENGAKTIFKAN" : "MENONAKTIFKAN";
+    const warnMessage = checked
+      ? "PERINGATAN PENTING:\n\nJika project ini sudah punya transaksi Kas sebelumnya, transaksi LAMA tersebut TIDAK akan ikut pindah. Hanya transaksi BARU yang akan tersimpan terpisah dari Kas Buku Besar.\n\nLanjutkan MENGAKTIFKAN Kas Mandiri?"
+      : "PERINGATAN PENTING:\n\nJika project ini sudah punya transaksi Kas Mandiri, data LAMA tersebut TIDAK otomatis pindah ke Kas Buku Besar dan akan tertinggal.\n\nLanjutkan MENONAKTIFKAN Kas Mandiri?";
+
+    if (!window.confirm(warnMessage)) return;
+
+    setIsIsolatedCash(checked);
+    notifyChange({ is_isolated_cash: checked });
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -38,6 +51,7 @@ export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDel
         location,
         rab_date: rabDate || null,
         status,
+        is_isolated_cash: isIsolatedCash,
       });
       if (onSaved) {
         onSaved(project.id);
@@ -112,6 +126,16 @@ export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDel
           <option value="aktif">Aktif</option>
           <option value="nonaktif">Non-aktif</option>
         </select>
+      </td>
+      <td className="px-4 py-3 text-center">
+        <label className="inline-flex items-center gap-2 cursor-pointer group" title="Kas Mandiri — transaksi project ini terpisah total dari Kas Buku Besar kantor, tidak akan pernah tergabung ke saldo kantor">
+          <input
+            type="checkbox"
+            checked={isIsolatedCash}
+            onChange={(e) => handleToggleIsolatedCash(e.target.checked)}
+            className="w-4 h-4 rounded border-border text-brand focus:ring-brand/50"
+          />
+        </label>
       </td>
       <td className="px-4 py-3 text-right">
         <div className="flex flex-col md:flex-row items-end md:items-center justify-end gap-1">

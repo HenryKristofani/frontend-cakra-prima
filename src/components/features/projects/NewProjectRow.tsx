@@ -13,6 +13,7 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
   const [location, setLocation] = useState("");
   const [rabDate, setRabDate] = useState("");
   const [status, setStatus] = useState<"aktif" | "nonaktif">("aktif");
+  const [isIsolatedCash, setIsIsolatedCash] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -24,11 +25,13 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
         location: location || null,
         rab_date: rabDate || null,
         status,
+        is_isolated_cash: isIsolatedCash,
       });
       setName("");
       setLocation("");
       setRabDate("");
       setStatus("aktif");
+      setIsIsolatedCash(false);
     } catch (e) {
       console.error(e);
       alert("Gagal menambahkan project");
@@ -75,6 +78,16 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
           <option value="aktif">Aktif</option>
           <option value="nonaktif">Non-aktif</option>
         </select>
+      </td>
+      <td className="px-4 py-3 text-center">
+        <label className="inline-flex items-center gap-2 cursor-pointer group" title="Kas Mandiri — transaksi project ini terpisah total dari Kas Buku Besar kantor, tidak akan pernah tergabung ke saldo kantor">
+          <input
+            type="checkbox"
+            checked={isIsolatedCash}
+            onChange={(e) => setIsIsolatedCash(e.target.checked)}
+            className="w-4 h-4 rounded border-border text-brand focus:ring-brand/50"
+          />
+        </label>
       </td>
       <td className="px-4 py-3 text-right">
         <button

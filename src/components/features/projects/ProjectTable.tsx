@@ -87,6 +87,7 @@ export function ProjectTable({
               <th className="px-4 py-3 font-medium">Lokasi</th>
               <th className="px-4 py-3 font-medium">Tanggal RAB</th>
               <th className="px-4 py-3 font-medium w-40">Status</th>
+              <th className="px-4 py-3 font-medium text-center" title="Kas Mandiri — transaksi project ini terpisah total dari Kas Buku Besar kantor, tidak akan pernah tergabung ke saldo kantor">Kas Mandiri</th>
               <th className="px-4 py-3 font-medium text-right w-32">Aksi</th>
             </tr>
           </thead>

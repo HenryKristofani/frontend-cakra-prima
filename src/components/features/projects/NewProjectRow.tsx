@@ -80,13 +80,14 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
         </select>
       </td>
       <td className="px-4 py-3 text-center">
-        <label className="inline-flex items-center gap-2 cursor-pointer group" title="Kas Mandiri — transaksi project ini terpisah total dari Kas Buku Besar kantor, tidak akan pernah tergabung ke saldo kantor">
+        <label className="relative inline-flex items-center cursor-pointer" title="Kas Mandiri — transaksi project ini terpisah total dari Kas Buku Besar kantor, tidak akan pernah tergabung ke saldo kantor">
           <input
             type="checkbox"
+            className="sr-only peer"
             checked={isIsolatedCash}
             onChange={(e) => setIsIsolatedCash(e.target.checked)}
-            className="w-4 h-4 rounded border-border text-brand focus:ring-brand/50"
           />
+          <div className="w-9 h-5 bg-border/50 hover:bg-border peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand"></div>
         </label>
       </td>
       <td className="px-4 py-3 text-right">

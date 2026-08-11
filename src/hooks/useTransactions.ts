@@ -73,11 +73,11 @@ export function useTransactions(
     }
   }, [filters, fetchTransactions]);
 
-  const deleteTransaction = useCallback(async (id: number) => {
+  const deleteTransaction = useCallback(async (id: number, projectId?: number | string | null) => {
     setIsLoading(true);
     setError(null);
     try {
-      await transactionService.deleteTransaction(id);
+      await transactionService.deleteTransaction(id, projectId);
       await fetchTransactions(filters);
     } catch (err: any) {
       setError(err.message || 'Failed to delete transaction');

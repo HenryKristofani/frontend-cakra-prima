@@ -4,6 +4,7 @@ export interface Project {
   status: "aktif" | "nonaktif";
   location?: string | null;
   rab_date?: string | null;
+  is_isolated_cash?: boolean;
 }
 
 export interface Account {

@@ -102,7 +102,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
             className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
           >
             <option value="">-- Pilih Project --</option>
-            {projects.map((p) => (
+            {projects.filter(p => !p.is_isolated_cash).map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
@@ -110,20 +110,22 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
           </select>
         )}
       </td>
-      <td className="px-4 py-3">
-        <select
-          value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
-          className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
-        >
-          <option value="">-- Pilih Akun --</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name} ({a.type})
-            </option>
-          ))}
-        </select>
-      </td>
+      {!(lockedProjectId && projects.find(p => p.id === Number(lockedProjectId))?.is_isolated_cash) && (
+        <td className="px-4 py-3">
+          <select
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+          >
+            <option value="">-- Pilih Akun --</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({a.type})
+              </option>
+            ))}
+          </select>
+        </td>
+      )}
       <td className="px-4 py-3">
         <input
           type="text"

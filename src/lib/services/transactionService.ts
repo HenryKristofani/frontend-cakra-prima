@@ -60,9 +60,11 @@ export const transactionService = {
   /**
    * Delete a transaction.
    */
-  async deleteTransaction(id: number): Promise<void> {
+  async deleteTransaction(id: number, projectId?: number | string | null): Promise<void> {
+    const params = projectId ? { project_id: projectId } : undefined;
     return fetchApi<void>(`/transactions/${id}`, {
       method: 'DELETE',
+      params: params as Record<string, string | number | undefined>,
     });
   }
 };

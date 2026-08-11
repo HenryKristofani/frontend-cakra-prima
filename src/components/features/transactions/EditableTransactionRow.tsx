@@ -8,7 +8,7 @@ import { fetchApi } from "@/lib/api";
 interface EditableTransactionRowProps {
   trx: Transaction;
   onUpdate: (id: number, data: Partial<Transaction>) => Promise<void>;
-  onDelete: (id: number) => Promise<void>;
+  onDelete: (id: number, projectId?: number | string | null) => Promise<void>;
   projects?: Project[];
   accounts?: Account[];
   lockedProjectId?: number | string;
@@ -82,7 +82,7 @@ export function EditableTransactionRow({
     if (!window.confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return;
     setIsDeleting(true);
     try {
-      await onDelete(trx.id);
+      await onDelete(trx.id, trx.project_id);
     } catch (e) {
       console.error(e);
       alert("Gagal menghapus transaksi");
@@ -115,20 +115,22 @@ export function EditableTransactionRow({
           ))}
         </select>
       </td>
-      <td className="px-4 py-3">
-        <select
-          value={accountId}
-          onChange={(e) => setAccountId(e.target.value)}
-          className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
-        >
-          <option value="">-- Pilih Akun --</option>
-          {accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.name} ({a.type})
-            </option>
-          ))}
-        </select>
-      </td>
+      {!(lockedProjectId && projects.find(p => p.id === Number(lockedProjectId))?.is_isolated_cash) && (
+        <td className="px-4 py-3">
+          <select
+            value={accountId}
+            onChange={(e) => setAccountId(e.target.value)}
+            className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+          >
+            <option value="">-- Pilih Akun --</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} ({a.type})
+              </option>
+            ))}
+          </select>
+        </td>
+      )}
       <td className="px-4 py-3">
         <input
           type="text"

@@ -129,7 +129,9 @@ export function TransactionTable({
               <th className="px-4 py-3 font-medium">ID</th>
               <th className="px-4 py-3 font-medium">Tanggal</th>
               <th className="px-4 py-3 font-medium">Project</th>
-              <th className="px-4 py-3 font-medium">Akun</th>
+              {!(lockedProjectId && projects.find(p => p.id === Number(lockedProjectId))?.is_isolated_cash) && (
+                <th className="px-4 py-3 font-medium">Akun</th>
+              )}
               <th className="px-4 py-3 font-medium">Deskripsi</th>
               <th className="px-4 py-3 font-medium">Metode</th>
               <th className="px-4 py-3 font-medium text-emerald-600 dark:text-emerald-500">Pemasukan</th>

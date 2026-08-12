@@ -86,6 +86,34 @@ export function useTransactions(
     }
   }, [filters, fetchTransactions]);
 
+  const bulkSaveTransactions = useCallback(async (
+    newItems: Array<Omit<Transaction, 'id'>>,
+    dirtyItems: Array<Partial<Transaction> & { id: number }>,
+    projectId?: number | string
+  ) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      if (newItems.length > 0 && projectId) {
+        // Strip project_id from each item (server uses route param)
+        const payloads = newItems.map(({ project_id, ...rest }) => rest);
+        await transactionService.bulkCreateProjectTransactions(projectId, payloads as any);
+      } else if (newItems.length > 0) {
+        // Global context: use global bulk create endpoint
+        await transactionService.bulkCreateTransactions(newItems as any);
+      }
+      if (dirtyItems.length > 0) {
+        await transactionService.bulkUpdateTransactions(dirtyItems as any);
+      }
+      // Refresh page 1 after all saves
+      await fetchTransactions({ ...filters, page: 1 });
+    } catch (err: any) {
+      setError(err.message || 'Failed to bulk save transactions');
+      setIsLoading(false);
+      throw err;
+    }
+  }, [filters, fetchTransactions]);
+
   return {
     transactions: data.data,
     pagination: {
@@ -100,5 +128,6 @@ export function useTransactions(
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    bulkSaveTransactions,
   };
 }

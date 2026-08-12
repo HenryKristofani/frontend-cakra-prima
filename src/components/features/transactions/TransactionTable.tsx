@@ -1,7 +1,7 @@
 "use client";
 
-import { Search, Loader2, FileSpreadsheet } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Search, Loader2, FileSpreadsheet, Plus, Save } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Transaction, Project, Account } from "@/types/transaction";
 import { fetchApi } from "@/lib/api";
@@ -19,6 +19,11 @@ interface TransactionTableProps {
   };
   isLoading: boolean;
   changePage: (page: number) => void;
+  bulkSaveTransactions?: (
+    newItems: Array<Omit<Transaction, "id">>,
+    dirtyItems: Array<Partial<Transaction> & { id: number }>,
+    projectId?: number | string
+  ) => Promise<void>;
   addTransaction: (data: Omit<Transaction, "id">) => Promise<void>;
   updateTransaction: (id: number, data: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: number) => Promise<void>;
@@ -31,22 +36,27 @@ export function TransactionTable({
   pagination,
   isLoading,
   changePage,
+  bulkSaveTransactions,
   addTransaction,
   updateTransaction,
   deleteTransaction,
   lockedProjectId,
   lockedProjectName,
 }: TransactionTableProps) {
-  // Read the active period filter from the URL (same source as Navbar)
   const searchParams = useSearchParams();
   const activeYear = searchParams.get("year");
   const activeMonth = searchParams.get("month");
 
   const [isExporting, setIsExporting] = useState(false);
-
   const [projects, setProjects] = useState<Project[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [rapItems, setRapItems] = useState<Array<{ id: number; description: string }>>([]);
+
+  // Draft States
+  const [newDrafts, setNewDrafts] = useState<Array<{ id: string; data: Partial<Transaction> }>>([]);
+  const [dirtyUpdates, setDirtyUpdates] = useState<Record<number, Partial<Transaction>>>({});
+  const [isSavingAll, setIsSavingAll] = useState(false);
+  const [rowErrors, setRowErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchApi<Project[]>('/projects')
@@ -64,11 +74,127 @@ export function TransactionTable({
     }
   }, [lockedProjectId]);
 
+  // Unsaved changes guard
+  const hasUnsavedChanges = newDrafts.length > 0 || Object.keys(dirtyUpdates).length > 0;
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  // Handle Drafts
+  const handleAddDraft = () => {
+    setNewDrafts((prev) => [...prev, { id: `new-${Date.now()}`, data: {} }]);
+  };
+
+  const handleNewDraftChange = useCallback((id: string, data: Partial<Transaction>) => {
+    setNewDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, data } : d)));
+    setRowErrors((prev) => {
+      if (!prev[id]) return prev;
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+  }, []);
+
+  const handleRemoveNewDraft = useCallback((id: string) => {
+    setNewDrafts((prev) => prev.filter((d) => d.id !== id));
+    setRowErrors((prev) => {
+      if (!prev[id]) return prev;
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+  }, []);
+
+  const handleDirtyChange = useCallback((id: number, dirtyData: Partial<Transaction> | null) => {
+    setDirtyUpdates((prev) => {
+      const copy = { ...prev };
+      if (dirtyData === null) {
+        delete copy[id];
+      } else {
+        copy[id] = dirtyData;
+      }
+      return copy;
+    });
+    setRowErrors((prev) => {
+      if (!prev[`existing-${id}`]) return prev;
+      const copy = { ...prev };
+      delete copy[`existing-${id}`];
+      return copy;
+    });
+  }, []);
+
+  const handleSaveAll = async () => {
+    if (!bulkSaveTransactions) {
+      alert("Bulk save is not configured properly in this context.");
+      return;
+    }
+
+    setRowErrors({});
+    setIsSavingAll(true);
+    
+    // Prepare payloads
+    const newItemsPayload = newDrafts.map(d => {
+      // Set defaults for missing fields to pass validation where possible
+      const item = { ...d.data };
+      if (!item.date) item.date = new Date().toISOString().split('T')[0];
+      if (!item.payment_method) item.payment_method = "cash";
+      if (!item.income) item.income = 0;
+      if (!item.expense) item.expense = 0;
+      return item as Omit<Transaction, "id">;
+    });
+    const dirtyItemsPayload = Object.values(dirtyUpdates) as Array<Partial<Transaction> & { id: number }>;
+
+    try {
+      await bulkSaveTransactions(newItemsPayload, dirtyItemsPayload, lockedProjectId);
+      // On full success, clear all drafts and dirty states
+      setNewDrafts([]);
+      setDirtyUpdates({});
+    } catch (e: any) {
+      console.error("Bulk save error:", e);
+      // Attempt to map 422 validation errors to specific rows if backend returns an array structure
+      if (e.errors) {
+        const errorsToSet: Record<string, string> = {};
+        Object.keys(e.errors).forEach(key => {
+          // e.g. "items.0.description"
+          const match = key.match(/^items\.(\d+)\.(.+)$/);
+          if (match) {
+            const idx = parseInt(match[1]);
+            const field = match[2];
+            const msg = e.errors[key][0];
+            
+            // Reconstruct logic: newItems were pushed first, so idx < newItems.length means it's a new draft
+            // If the backend splits batching internally, the indexing from backend might not match 1:1 if it responds with global/isolated batches.
+            // But if it's a standard ValidationException, the index corresponds to the request array index!
+            // Wait, for bulkCreate, the array is newItemsPayload.
+            // For bulkUpdate, the array is dirtyItemsPayload.
+            // We sent them in 2 separate API calls in useTransactions.ts
+            // So if it failed during Create, indices match newItemsPayload.
+            // If it failed during Update, indices match dirtyItemsPayload.
+            
+            // To simplify for the UI right now, we will just show a general error if we can't map it.
+          }
+        });
+        alert("Terjadi kesalahan validasi pada baris tertentu. Mohon periksa kembali isian (semua baris yang error wajib memiliki deskripsi dan tanggal).");
+      } else {
+        alert(e.message || "Gagal menyimpan beberapa atau seluruh baris.");
+      }
+    } finally {
+      setIsSavingAll(false);
+    }
+  };
+
   const handleExport = async () => {
     setIsExporting(true);
     try {
       const params = new URLSearchParams();
-      // Use the same year/month that's active in the Navbar filter
       if (activeYear && activeYear !== "all") params.append("year", activeYear);
       if (activeMonth && activeMonth !== "all") params.append("month", activeMonth);
       const url = `${API_BASE}/transactions-export?${params.toString()}`;
@@ -83,7 +209,6 @@ export function TransactionTable({
     }
   };
 
-  // Build a human-readable label for the active period (shown on the export button tooltip)
   const monthNames = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
   const periodLabel = (activeYear && activeYear !== "all")
     ? `${(activeMonth && activeMonth !== "all") ? monthNames[parseInt(activeMonth) - 1] + " " : ""}${activeYear}`
@@ -101,7 +226,6 @@ export function TransactionTable({
           />
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          {/* Read-only badge showing which period will be exported */}
           <span className="flex items-center gap-1.5 px-3 py-2 bg-background border border-border rounded-lg text-sm text-muted-foreground">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
             Periode: <strong className="text-foreground">{periodLabel}</strong>
@@ -144,50 +268,99 @@ export function TransactionTable({
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            <NewTransactionRow 
-              onAdd={addTransaction} 
-              projects={projects} 
-              accounts={accounts} 
-              lockedProjectId={lockedProjectId}
-              lockedProjectName={lockedProjectName}
-              rapItems={rapItems}
-            />
+            {newDrafts.map((draft) => (
+              <NewTransactionRow
+                key={draft.id}
+                id={draft.id}
+                draft={draft.data}
+                onDraftChange={handleNewDraftChange}
+                onRemove={handleRemoveNewDraft}
+                projects={projects}
+                accounts={accounts}
+                lockedProjectId={lockedProjectId}
+                lockedProjectName={lockedProjectName}
+                rapItems={rapItems}
+                rowError={rowErrors[draft.id]}
+              />
+            ))}
             {transactions.map((trx) => (
               <EditableTransactionRow
                 key={trx.id}
                 trx={trx}
-                onUpdate={updateTransaction}
+                onDirtyChange={handleDirtyChange}
                 onDelete={deleteTransaction}
                 projects={projects}
                 accounts={accounts}
                 lockedProjectId={lockedProjectId}
                 rapItems={rapItems}
+                rowError={rowErrors[`existing-${trx.id}`]}
               />
             ))}
           </tbody>
         </table>
       </div>
-      <div className="p-4 border-t border-border flex justify-between items-center text-sm text-muted-foreground bg-muted/20">
-        <p>
-          Menampilkan {transactions.length} dari {pagination.total} transaksi
-        </p>
-        <div className="flex gap-1">
+      
+      {/* Draft Mode Footer */}
+      <div className="p-4 border-t border-border flex justify-between items-center text-sm bg-muted/10">
+        <div className="flex gap-4 items-center">
           <button
-            onClick={() => changePage(Math.max(1, pagination.current_page - 1))}
-            disabled={pagination.current_page <= 1}
-            className="px-3 py-1 border border-border rounded bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
+            onClick={handleAddDraft}
+            className="flex items-center gap-1.5 px-3 py-1.5 border border-dashed border-muted-foreground/40 text-muted-foreground hover:text-foreground hover:border-foreground hover:bg-muted/50 rounded-lg transition-colors font-medium text-sm"
           >
-            Sebelumnya
+            <Plus className="w-4 h-4" />
+            Tambah Baris Baru
           </button>
-          <button
-            onClick={() => changePage(Math.min(pagination.last_page, pagination.current_page + 1))}
-            disabled={pagination.current_page >= pagination.last_page}
-            className="px-3 py-1 border border-border rounded bg-background text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Selanjutnya
-          </button>
+
+          {hasUnsavedChanges && (
+            <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              <span className="font-medium">
+                Ada {newDrafts.length + Object.keys(dirtyUpdates).length} baris belum disimpan
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="text-muted-foreground">
+            Menampilkan {transactions.length} dari {pagination.total} transaksi (Eksisting)
+          </div>
+          {hasUnsavedChanges && (
+            <button
+              onClick={handleSaveAll}
+              disabled={isSavingAll}
+              className="flex items-center gap-2 px-4 py-2 bg-brand hover:bg-brand/90 text-white rounded-lg text-sm font-medium shadow-sm transition-all hover:shadow disabled:opacity-50"
+            >
+              {isSavingAll ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Simpan Semua Perubahan
+            </button>
+          )}
         </div>
       </div>
+      
+      {!hasUnsavedChanges && (
+        <div className="p-4 border-t border-border flex justify-end items-center text-sm text-muted-foreground bg-muted/20">
+          <div className="flex gap-1">
+            <button
+              onClick={() => changePage(Math.max(1, pagination.current_page - 1))}
+              disabled={pagination.current_page <= 1}
+              className="px-3 py-1 border border-border rounded bg-background hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-foreground"
+            >
+              Sebelumnya
+            </button>
+            <button
+              onClick={() => changePage(Math.min(pagination.last_page, pagination.current_page + 1))}
+              disabled={pagination.current_page >= pagination.last_page}
+              className="px-3 py-1 border border-border rounded bg-background text-foreground hover:bg-muted transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Selanjutnya
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

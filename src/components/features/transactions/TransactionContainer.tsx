@@ -29,6 +29,7 @@ export function TransactionContainer({
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    bulkSaveTransactions,
   } = useTransactions(initialData, initialSummary, initialFilters);
 
   return (
@@ -39,6 +40,7 @@ export function TransactionContainer({
         pagination={pagination}
         isLoading={isLoading}
         changePage={changePage}
+        bulkSaveTransactions={bulkSaveTransactions}
         addTransaction={addTransaction}
         updateTransaction={updateTransaction}
         deleteTransaction={deleteTransaction}

@@ -1,28 +1,29 @@
 "use client";
 
 import { Loader2, Trash2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Transaction, Project, Account } from "@/types/transaction";
-import { fetchApi } from "@/lib/api";
 
 interface EditableTransactionRowProps {
   trx: Transaction;
-  onUpdate: (id: number, data: Partial<Transaction>) => Promise<void>;
+  onDirtyChange: (id: number, dirtyData: Partial<Transaction> | null) => void;
   onDelete: (id: number, projectId?: number | string | null) => Promise<void>;
   projects?: Project[];
   accounts?: Account[];
   lockedProjectId?: number | string;
   rapItems?: Array<{ id: number; description: string }>;
+  rowError?: string | null;
 }
 
 export function EditableTransactionRow({
   trx,
-  onUpdate,
+  onDirtyChange,
   onDelete,
   projects = [],
   accounts = [],
   lockedProjectId,
   rapItems = [],
+  rowError,
 }: EditableTransactionRowProps) {
   const [date, setDate] = useState(trx.date?.split("T")[0] || "");
   const [projectId, setProjectId] = useState<string>(trx.project_id ? String(trx.project_id) : "");
@@ -35,53 +36,57 @@ export function EditableTransactionRow({
   const initialExpense = trx.expense && Number(trx.expense) > 0 ? Number(trx.expense).toString() : "";
   const [income, setIncome] = useState(initialIncome);
   const [expense, setExpense] = useState(initialExpense);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [rapItemId, setRapItemId] = useState<string>(trx.rap_item_id ? String(trx.rap_item_id) : "");
 
-  // Sync projectId when projects load, but only if it matches a valid project
   useEffect(() => {
     if (projects.length > 0 && trx.project_id) {
-      // Ensure the project_id exists in the loaded projects
       if (projects.some(p => p.id === trx.project_id)) {
         setProjectId(String(trx.project_id));
       }
     }
   }, [projects, trx.project_id]);
 
-  // Make sure if the transaction already has a rap_item, it is included in the options
   const allRapItems = [...rapItems];
   if (trx.rap_item && !allRapItems.find(i => i.id === trx.rap_item?.id)) {
     allRapItems.push(trx.rap_item);
   }
 
-  const [rapItemId, setRapItemId] = useState<string>(trx.rap_item_id ? String(trx.rap_item_id) : "");
+  const buildDirtyPayload = useCallback((overrides: Record<string, any> = {}) => {
+    const d = overrides.date ?? date;
+    const pid = overrides.projectId ?? projectId;
+    const aid = overrides.accountId ?? accountId;
+    const desc = overrides.description ?? description;
+    const pay = overrides.payment ?? payment;
+    const inc = overrides.income ?? income;
+    const exp = overrides.expense ?? expense;
+    const rid = overrides.rapItemId ?? rapItemId;
+    const comp = overrides.company ?? company;
+    return {
+      id: trx.id,
+      project_id: pid ? Number(pid) : (trx.project_id ?? null),
+      date: d,
+      account_id: aid ? Number(aid) : null,
+      company: comp || undefined,
+      description: desc,
+      payment_method: pay as "cash" | "rek",
+      income: inc ? Number(inc) : 0,
+      expense: exp ? Number(exp) : 0,
+      rap_item_id: rid ? Number(rid) : null,
+    };
+  }, [date, projectId, accountId, company, description, payment, income, expense, rapItemId, trx.id, trx.project_id]);
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      await onUpdate(trx.id, {
-        date,
-        project_id: projectId ? Number(projectId) : null,
-        account_id: accountId ? Number(accountId) : null,
-        company: company || undefined,
-        description,
-        payment_method: payment,
-        income: income ? Number(income) : 0,
-        expense: expense ? Number(expense) : 0,
-        rap_item_id: rapItemId ? Number(rapItemId) : null,
-      });
-    } catch (e) {
-      console.error(e);
-      alert("Gagal memperbarui transaksi");
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  const markDirty = useCallback((overrides: Record<string, any> = {}) => {
+    setIsDirty(true);
+    onDirtyChange(trx.id, buildDirtyPayload(overrides));
+  }, [buildDirtyPayload, trx.id, onDirtyChange]);
 
   const handleDelete = async () => {
     if (!window.confirm("Apakah Anda yakin ingin menghapus transaksi ini?")) return;
     setIsDeleting(true);
     try {
+      onDirtyChange(trx.id, null);
       await onDelete(trx.id, trx.project_id);
     } catch (e) {
       console.error(e);
@@ -90,43 +95,57 @@ export function EditableTransactionRow({
     }
   };
 
+  const isIsolated = !!(lockedProjectId && projects.find(p => p.id === Number(lockedProjectId))?.is_isolated_cash);
+
+  const rowBg = rowError
+    ? "bg-rose-50/50 dark:bg-rose-900/10"
+    : isDirty
+    ? "bg-amber-50/60 dark:bg-amber-500/5 border-l-2 border-amber-400"
+    : "bg-card hover:bg-muted/50 transition-colors";
+
   return (
-    <tr className="bg-card hover:bg-muted/50 transition-colors text-foreground">
-      <td className="px-4 py-3 font-medium text-xs text-muted-foreground">{trx.id}</td>
+    <tr className={`text-foreground ${rowBg}`}>
+      <td className="px-4 py-3 font-medium text-xs text-muted-foreground">
+        <div className="flex flex-col gap-0.5">
+          <span>{trx.id}</span>
+          {isDirty && !rowError && (
+            <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 leading-none">DRAFT</span>
+          )}
+          {rowError && (
+            <span className="text-[10px] font-semibold text-rose-600 leading-none">ERROR</span>
+          )}
+        </div>
+      </td>
       <td className="px-4 py-3">
         <input
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e) => { setDate(e.target.value); markDirty({ date: e.target.value }); }}
           className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         />
       </td>
       <td className="px-4 py-3">
         <select
           value={projectId}
-          onChange={(e) => setProjectId(e.target.value)}
+          onChange={(e) => { setProjectId(e.target.value); markDirty({ projectId: e.target.value }); }}
           className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         >
           <option value="">-- Pilih Project --</option>
           {projects.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
+            <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
       </td>
-      {!(lockedProjectId && projects.find(p => p.id === Number(lockedProjectId))?.is_isolated_cash) && (
+      {!isIsolated && (
         <td className="px-4 py-3">
           <select
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
+            onChange={(e) => { setAccountId(e.target.value); markDirty({ accountId: e.target.value }); }}
             className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
           >
             <option value="">-- Pilih Akun --</option>
             {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name} ({a.type})
-              </option>
+              <option key={a.id} value={a.id}>{a.name} ({a.type})</option>
             ))}
           </select>
         </td>
@@ -135,7 +154,7 @@ export function EditableTransactionRow({
         <input
           type="text"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => { setDescription(e.target.value); markDirty({ description: e.target.value }); }}
           placeholder="Deskripsi..."
           className="w-full min-w-[180px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         />
@@ -143,7 +162,7 @@ export function EditableTransactionRow({
       <td className="px-4 py-3">
         <select
           value={payment}
-          onChange={(e) => setPayment(e.target.value as "cash" | "rek")}
+          onChange={(e) => { setPayment(e.target.value as "cash" | "rek"); markDirty({ payment: e.target.value }); }}
           className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         >
           <option value="cash">Cash</option>
@@ -154,7 +173,7 @@ export function EditableTransactionRow({
         <input
           type="number"
           value={income}
-          onChange={(e) => setIncome(e.target.value)}
+          onChange={(e) => { setIncome(e.target.value); markDirty({ income: e.target.value }); }}
           disabled={expense.length > 0}
           placeholder="Pemasukan..."
           className="w-full min-w-[120px] bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-emerald-700 dark:text-emerald-400 placeholder:text-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -164,7 +183,7 @@ export function EditableTransactionRow({
         <input
           type="number"
           value={expense}
-          onChange={(e) => setExpense(e.target.value)}
+          onChange={(e) => { setExpense(e.target.value); markDirty({ expense: e.target.value }); }}
           disabled={income.length > 0}
           placeholder="Pengeluaran..."
           className="w-full min-w-[120px] bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-rose-700 dark:text-rose-400 placeholder:text-rose-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -175,18 +194,15 @@ export function EditableTransactionRow({
       </td>
       {lockedProjectId && (
         <td className="px-4 py-3">
-          {/* RAP Item dropdown — tampil hanya kalau project punya RAP */}
           {allRapItems.length > 0 ? (
             <select
               value={rapItemId}
-              onChange={(e) => setRapItemId(e.target.value)}
+              onChange={(e) => { setRapItemId(e.target.value); markDirty({ rapItemId: e.target.value }); }}
               className="w-full min-w-[160px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
             >
               <option value="">-- Tanpa tag RAP --</option>
               {allRapItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.description}
-                </option>
+                <option key={item.id} value={item.id}>{item.description}</option>
               ))}
             </select>
           ) : (
@@ -196,16 +212,12 @@ export function EditableTransactionRow({
       )}
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
-          <button
-            onClick={handleSave}
-            disabled={isSaving || isDeleting}
-            className="px-3 py-1.5 text-xs font-medium text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded-md transition-colors disabled:opacity-50"
-          >
-            {isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : "Simpan"}
-          </button>
+          {rowError && (
+            <span className="text-[10px] text-rose-600 max-w-[100px] text-right leading-tight">{rowError}</span>
+          )}
           <button
             onClick={handleDelete}
-            disabled={isSaving || isDeleting}
+            disabled={isDeleting}
             className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-md transition-colors disabled:opacity-50"
           >
             {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}

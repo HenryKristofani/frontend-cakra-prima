@@ -66,5 +66,42 @@ export const transactionService = {
       method: 'DELETE',
       params: params as Record<string, string | number | undefined>,
     });
-  }
+  },
+
+  /**
+   * Bulk create transactions for a project (uses /projects/{id}/transactions/bulk).
+   */
+  async bulkCreateProjectTransactions(
+    projectId: number | string,
+    items: Array<Omit<Transaction, 'id' | 'created_at' | 'updated_at'>>
+  ): Promise<Transaction[]> {
+    return fetchApi<Transaction[]>(`/projects/${projectId}/transactions/bulk`, {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    });
+  },
+
+  /**
+   * Bulk update existing transactions (each item MUST include project_id for routing).
+   */
+  async bulkUpdateTransactions(
+    items: Array<Partial<Transaction> & { id: number; project_id?: number | null }>
+  ): Promise<Transaction[]> {
+    return fetchApi<Transaction[]>('/transactions/bulk', {
+      method: 'PUT',
+      body: JSON.stringify({ items }),
+    });
+  },
+
+  /**
+   * Bulk create new transactions (each item MUST include project_id for routing).
+   */
+  async bulkCreateTransactions(
+    items: Array<Omit<Transaction, 'id' | 'created_at' | 'updated_at'>>
+  ): Promise<Transaction[]> {
+    return fetchApi<Transaction[]>('/transactions/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ items }),
+    });
+  },
 };

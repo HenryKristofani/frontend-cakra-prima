@@ -1,21 +1,35 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Loader2, Trash2 } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Transaction, Project, Account } from "@/types/transaction";
-import { fetchApi } from "@/lib/api";
 
 interface NewTransactionRowProps {
-  onAdd: (data: Omit<Transaction, "id">) => Promise<void>;
+  id: string;
+  draft: Partial<Transaction>;
+  onDraftChange: (id: string, data: Partial<Transaction>) => void;
+  onRemove: (id: string) => void;
   projects?: Project[];
   accounts?: Account[];
   lockedProjectId?: number | string;
   lockedProjectName?: string;
   rapItems?: Array<{ id: number; description: string }>;
+  rowError?: string | null;
 }
 
-export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedProjectId, lockedProjectName, rapItems = [] }: NewTransactionRowProps) {
+export function NewTransactionRow({
+  id,
+  draft,
+  onDraftChange,
+  onRemove,
+  projects = [],
+  accounts = [],
+  lockedProjectId,
+  lockedProjectName,
+  rapItems = [],
+  rowError,
+}: NewTransactionRowProps) {
   const searchParams = useSearchParams();
   const year = searchParams.get('year');
   const month = searchParams.get('month');
@@ -24,69 +38,59 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
     ? `${year}-${month.padStart(2, '0')}-01` 
     : "";
 
-  const [date, setDate] = useState(initialDate);
+  const [date, setDate] = useState(draft.date || initialDate);
+  const [projectId, setProjectId] = useState<string>(draft.project_id ? String(draft.project_id) : (lockedProjectId ? String(lockedProjectId) : ""));
+  const [accountId, setAccountId] = useState<string>(draft.account_id ? String(draft.account_id) : "");
+  const [company, setCompany] = useState(draft.company || "");
+  const [description, setDescription] = useState(draft.description || "");
+  const [payment, setPayment] = useState<"cash" | "rek">(draft.payment_method || "cash");
+  const [income, setIncome] = useState(draft.income ? String(draft.income) : "");
+  const [expense, setExpense] = useState(draft.expense ? String(draft.expense) : "");
+  const [rapItemId, setRapItemId] = useState<string>(draft.rap_item_id ? String(draft.rap_item_id) : "");
 
-  // Sync date if URL changes
-  useEffect(() => {
-    if (year && year !== 'all' && month && month !== 'all') {
-      setDate(`${year}-${month.padStart(2, '0')}-01`);
-    } else {
-      setDate("");
-    }
-  }, [year, month]);
-  const [projectId, setProjectId] = useState<string>("");
-  // ... rest initialized
-  const [accountId, setAccountId] = useState<string>("");
-  const [company, setCompany] = useState("");
-  const [description, setDescription] = useState("");
-  const [payment, setPayment] = useState<"cash" | "rek">("cash");
-  const [income, setIncome] = useState("");
-  const [expense, setExpense] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const emitChange = useCallback((overrides: Record<string, any> = {}) => {
+    const d = overrides.date ?? date;
+    const pid = overrides.projectId ?? projectId;
+    const aid = overrides.accountId ?? accountId;
+    const desc = overrides.description ?? description;
+    const pay = overrides.payment ?? payment;
+    const inc = overrides.income ?? income;
+    const exp = overrides.expense ?? expense;
+    const rid = overrides.rapItemId ?? rapItemId;
+    const comp = overrides.company ?? company;
 
-  // RAP item dropdown
-  const [rapItemId, setRapItemId] = useState<string>("");
+    onDraftChange(id, {
+      date: d,
+      project_id: pid ? Number(pid) : null,
+      account_id: aid ? Number(aid) : null,
+      company: comp || undefined,
+      description: desc,
+      payment_method: pay as "cash" | "rek",
+      income: inc ? Number(inc) : 0,
+      expense: exp ? Number(exp) : 0,
+      rap_item_id: rid ? Number(rid) : null,
+    });
+  }, [id, date, projectId, accountId, company, description, payment, income, expense, rapItemId, onDraftChange]);
 
-  const handleSubmit = async () => {
-    if (!date || !description) return alert("Tanggal dan Deskripsi wajib diisi");
-    setIsSubmitting(true);
-    try {
-      await onAdd({
-        date,
-        project_id: lockedProjectId ? Number(lockedProjectId) : (projectId ? Number(projectId) : null),
-        account_id: accountId ? Number(accountId) : null,
-        company: company || undefined,
-        description,
-        payment_method: payment,
-        income: income ? Number(income) : 0,
-        expense: expense ? Number(expense) : 0,
-        rap_item_id: rapItemId ? Number(rapItemId) : null,
-      });
-      setDate(initialDate);
-      if (!lockedProjectId) setProjectId("");
-      setAccountId("");
-      setCompany("");
-      setDescription("");
-      setPayment("cash");
-      setIncome("");
-      setExpense("");
-      setRapItemId("");
-    } catch (e) {
-      console.error(e);
-      alert("Gagal menambahkan transaksi");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+  const rowBg = rowError
+    ? "bg-rose-50/50 dark:bg-rose-900/10"
+    : "bg-muted/20 border-b-2 border-border text-foreground";
 
   return (
-    <tr className="bg-muted/20 border-b-2 border-border text-foreground">
-      <td className="px-4 py-3 font-medium text-xs text-muted-foreground text-center">BARU</td>
+    <tr className={rowBg}>
+      <td className="px-4 py-3 font-medium text-xs text-muted-foreground text-center">
+        <div className="flex flex-col gap-0.5">
+          <span>BARU</span>
+          {rowError && (
+            <span className="text-[10px] font-semibold text-rose-600 leading-none">ERROR</span>
+          )}
+        </div>
+      </td>
       <td className="px-4 py-3">
         <input
           type="date"
           value={date}
-          onChange={(e) => setDate(e.target.value)}
+          onChange={(e) => { setDate(e.target.value); emitChange({ date: e.target.value }); }}
           className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         />
       </td>
@@ -98,7 +102,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
         ) : (
           <select
             value={projectId}
-            onChange={(e) => setProjectId(e.target.value)}
+            onChange={(e) => { setProjectId(e.target.value); emitChange({ projectId: e.target.value }); }}
             className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
           >
             <option value="">-- Pilih Project --</option>
@@ -114,7 +118,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
         <td className="px-4 py-3">
           <select
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
+            onChange={(e) => { setAccountId(e.target.value); emitChange({ accountId: e.target.value }); }}
             className="w-full min-w-[130px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
           >
             <option value="">-- Pilih Akun --</option>
@@ -130,7 +134,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
         <input
           type="text"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => { setDescription(e.target.value); emitChange({ description: e.target.value }); }}
           placeholder="Deskripsi..."
           className="w-full min-w-[180px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         />
@@ -138,7 +142,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
       <td className="px-4 py-3">
         <select
           value={payment}
-          onChange={(e) => setPayment(e.target.value as "cash" | "rek")}
+          onChange={(e) => { setPayment(e.target.value as "cash" | "rek"); emitChange({ payment: e.target.value }); }}
           className="w-full bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
         >
           <option value="cash">Cash</option>
@@ -149,7 +153,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
         <input
           type="number"
           value={income}
-          onChange={(e) => setIncome(e.target.value)}
+          onChange={(e) => { setIncome(e.target.value); emitChange({ income: e.target.value }); }}
           disabled={expense.length > 0}
           placeholder="Pemasukan..."
           className="w-full min-w-[120px] bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-emerald-700 dark:text-emerald-400 placeholder:text-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -159,13 +163,12 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
         <input
           type="number"
           value={expense}
-          onChange={(e) => setExpense(e.target.value)}
+          onChange={(e) => { setExpense(e.target.value); emitChange({ expense: e.target.value }); }}
           disabled={income.length > 0}
           placeholder="Pengeluaran..."
           className="w-full min-w-[120px] bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-rose-700 dark:text-rose-400 placeholder:text-rose-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </td>
-      {/* Rekap Saldo — always dash for new row (calculated server-side) */}
       <td className="px-4 py-3 text-xs text-muted-foreground text-right">-</td>
       
       {lockedProjectId && (
@@ -173,7 +176,7 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
           {rapItems.length > 0 ? (
             <select
               value={rapItemId}
-              onChange={(e) => setRapItemId(e.target.value)}
+              onChange={(e) => { setRapItemId(e.target.value); emitChange({ rapItemId: e.target.value }); }}
               className="w-full min-w-[160px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
             >
               <option value="">-- Tanpa tag RAP --</option>
@@ -190,13 +193,18 @@ export function NewTransactionRow({ onAdd, projects = [], accounts = [], lockedP
       )}
       
       <td className="px-4 py-3 text-right">
-        <button
-          onClick={handleSubmit}
-          disabled={isSubmitting}
-          className="px-3.5 py-1.5 bg-foreground text-background rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Tambah"}
-        </button>
+        <div className="flex items-center justify-end gap-1">
+          {rowError && (
+            <span className="text-[10px] text-rose-600 max-w-[100px] text-right leading-tight">{rowError}</span>
+          )}
+          <button
+            onClick={() => onRemove(id)}
+            className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-md transition-colors"
+            title="Hapus baris ini"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </td>
     </tr>
   );

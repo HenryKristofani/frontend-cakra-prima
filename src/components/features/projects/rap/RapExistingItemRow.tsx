@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
-import { RotateCcw } from 'lucide-react';
+import React, { useState } from 'react';
+import { RotateCcw, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 import { RapItem } from '@/types/rap';
 import { formatCurrency } from '@/utils/formatters';
+import { rapService } from '@/lib/services/rapService';
 
 export interface RapDirtyItemState {
   description: string;
@@ -16,13 +17,21 @@ export interface RapDirtyItemState {
 
 const SATUANS = ['m', 'm2', 'm3', 'm4', 'Unit', 'Ls', 'Titik', 'bh', 'ls', 'kg', 'ton', 'zak'];
 
+export type RapSyncStatus = {
+  status: 'synced' | 'rab_changed' | 'rab_removed';
+  latest_rab?: { description: string; volume: number };
+  snapshot?: { description: string; volume: number };
+};
+
 interface RapExistingItemRowProps {
   item: RapItem;
   dirtyState?: RapDirtyItemState;
   idx: number;
   pajakPct: number;
+  syncStatus?: RapSyncStatus;
   onQuickChange: (item: RapItem, field: keyof RapDirtyItemState, value: string) => void;
   onRevert: (itemId: number) => void;
+  onSyncSuccess: () => void;
 }
 
 /**
@@ -37,8 +46,10 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   dirtyState,
   idx,
   pajakPct,
+  syncStatus,
   onQuickChange,
   onRevert,
+  onSyncSuccess,
 }: RapExistingItemRowProps) {
   const isDirty = !!dirtyState;
 
@@ -47,6 +58,22 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   const unit = isDirty ? dirtyState.unit : item.unit;
   const unitPrice = isDirty ? dirtyState.unit_price : item.unit_price.toString();
   const errors = isDirty ? dirtyState.errors : undefined;
+
+  const [isSyncConfirmOpen, setIsSyncConfirmOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const handleSyncFromRab = async () => {
+    setIsSyncing(true);
+    setIsSyncConfirmOpen(false);
+    try {
+      await rapService.syncFromRab(item.id);
+      onSyncSuccess();
+    } catch (e: any) {
+      alert(e?.message || 'Gagal sync dari RAB');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const uniqueUnits = SATUANS.includes(item.unit) ? SATUANS : [...SATUANS, item.unit];
 
@@ -58,6 +85,10 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
 
   const rowClass = isDirty
     ? 'bg-amber-50/70 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-foreground group'
+    : syncStatus?.status === 'rab_changed'
+    ? 'bg-orange-50/40 dark:bg-orange-950/10 border-b border-border/30 text-foreground group'
+    : syncStatus?.status === 'rab_removed'
+    ? 'bg-rose-50/40 dark:bg-rose-950/10 border-b border-border/30 text-foreground group'
     : 'border-b border-border/30 hover:bg-muted/10 group';
 
   const inputBase =
@@ -93,6 +124,61 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
 
       {/* Uraian */}
       <td className="px-3 py-1.5 border-r border-border/50 text-xs align-top">
+        {/* Sync status badges */}
+        {syncStatus?.status === 'rab_changed' && (
+          <div className="flex items-center gap-1 mb-1">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-400">
+              <AlertTriangle className="w-2.5 h-2.5" />
+              RAB Berubah
+            </span>
+            <button
+              onClick={() => setIsSyncConfirmOpen(true)}
+              disabled={isSyncing}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition-colors disabled:opacity-50"
+            >
+              {isSyncing ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <RefreshCw className="w-2.5 h-2.5" />}
+              Update dari RAB
+            </button>
+          </div>
+        )}
+        {syncStatus?.status === 'rab_removed' && (
+          <div className="mb-1">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-400">
+              <AlertTriangle className="w-2.5 h-2.5" />
+              Item RAB Dihapus
+            </span>
+          </div>
+        )}
+        {/* Confirm dialog */}
+        {isSyncConfirmOpen && syncStatus?.status === 'rab_changed' && (
+          <div className="mb-2 p-2 border border-orange-300 dark:border-orange-700 rounded-md bg-orange-50 dark:bg-orange-950/30 text-xs">
+            <p className="font-semibold text-orange-800 dark:text-orange-300 mb-1">Konfirmasi Update dari RAB</p>
+            <table className="w-full text-[10px] mb-2">
+              <thead><tr className="text-muted-foreground"><th className="text-left pr-2">Field</th><th className="text-left pr-2">Lama (RAP)</th><th className="text-left">Baru (RAB)</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td className="pr-2 text-muted-foreground">Deskripsi</td>
+                  <td className="pr-2">{syncStatus.snapshot?.description}</td>
+                  <td className="font-medium text-orange-700 dark:text-orange-400">{syncStatus.latest_rab?.description}</td>
+                </tr>
+                <tr>
+                  <td className="pr-2 text-muted-foreground">Volume</td>
+                  <td className="pr-2">{syncStatus.snapshot?.volume}</td>
+                  <td className="font-medium text-orange-700 dark:text-orange-400">{syncStatus.latest_rab?.volume}</td>
+                </tr>
+              </tbody>
+            </table>
+            <p className="text-[10px] text-muted-foreground mb-2">Harga RAP tidak akan berubah.</p>
+            <div className="flex gap-1">
+              <button onClick={handleSyncFromRab} className="px-2 py-0.5 bg-orange-600 text-white rounded text-[10px] font-semibold hover:bg-orange-700 transition-colors">
+                Ya, Update
+              </button>
+              <button onClick={() => setIsSyncConfirmOpen(false)} className="px-2 py-0.5 bg-muted text-foreground rounded text-[10px] hover:bg-muted/80 transition-colors">
+                Batal
+              </button>
+            </div>
+          </div>
+        )}
         <div className="flex items-start justify-between">
           <div className="flex-1 mr-2">
             <input

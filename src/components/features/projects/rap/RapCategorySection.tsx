@@ -7,12 +7,13 @@ import { Edit2, Trash2, Loader2, Plus, Save, AlertCircle } from 'lucide-react';
 import { rapService } from '@/lib/services/rapService';
 import { AddRapCategoryForm } from './AddRapCategoryForm';
 import { RapDraftItemRow, RapDraftItem } from './RapDraftItemRow';
-import { RapExistingItemRow, RapDirtyItemState } from './RapExistingItemRow';
+import { RapExistingItemRow, RapDirtyItemState, RapSyncStatus } from './RapExistingItemRow';
 
 interface RapCategorySectionProps {
   category: RapCategory;
   depth?: number;
   pajakPct: number;
+  syncStatuses?: Record<string, RapSyncStatus>;
   onRefresh: () => Promise<void>;
   projectId: number | string;
   onDirtyChange?: (categoryId: number, hasDirty: boolean) => void;
@@ -37,6 +38,7 @@ export function RapCategorySection({
   category,
   depth = 0,
   pajakPct,
+  syncStatuses = {},
   onRefresh,
   projectId,
   onDirtyChange,
@@ -418,6 +420,7 @@ export function RapCategorySection({
       {/* Existing Items */}
       {category.items.map((item, idx) => {
         const dirtyState = dirtyItems.get(item.id);
+        const syncStatus = syncStatuses[item.id.toString()];
         return (
           <RapExistingItemRow
             key={item.id}
@@ -425,8 +428,10 @@ export function RapCategorySection({
             dirtyState={dirtyState}
             idx={idx}
             pajakPct={pajakPct}
+            syncStatus={syncStatus}
             onQuickChange={handleDirtyChange}
             onRevert={handleRevertDirty}
+            onSyncSuccess={onRefresh}
           />
         );
       })}
@@ -466,6 +471,7 @@ export function RapCategorySection({
           category={child}
           depth={depth + 1}
           pajakPct={pajakPct}
+          syncStatuses={syncStatuses}
           onRefresh={onRefresh}
           projectId={projectId}
           onDirtyChange={onDirtyChange}

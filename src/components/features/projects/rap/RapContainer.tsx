@@ -5,8 +5,9 @@ import { RapCategory, RapSettingResponse } from '@/types/rap';
 import { AddRapCategoryForm } from './AddRapCategoryForm';
 import { RapCategorySection } from './RapCategorySection';
 import { formatCurrency } from '@/utils/formatters';
-import { Settings2, Loader2, Save, FileText } from 'lucide-react';
+import { Settings2, Loader2, Save, FileText, RefreshCw } from 'lucide-react';
 import { rapService } from '@/lib/services/rapService';
+import type { RapSyncStatus } from './RapExistingItemRow';
 
 interface RapContainerProps {
   projectId: string | number;
@@ -15,6 +16,7 @@ interface RapContainerProps {
 export function RapContainer({ projectId }: RapContainerProps) {
   const [categories, setCategories] = useState<RapCategory[]>([]);
   const [setting, setSetting] = useState<RapSettingResponse | null>(null);
+  const [syncStatuses, setSyncStatuses] = useState<Record<string, RapSyncStatus>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,15 +28,18 @@ export function RapContainer({ projectId }: RapContainerProps) {
   const [pajakValue, setPajakValue] = useState('');
   const [isSavingSetting, setIsSavingSetting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSyncingNew, setIsSyncingNew] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
-      const [cats, set] = await Promise.all([
+      const [cats, set, syncStats] = await Promise.all([
         rapService.getCategories(projectId),
         rapService.getSetting(projectId),
+        rapService.getSyncStatus(projectId).catch(() => ({})), // Fallback to empty if error
       ]);
       setCategories(cats);
       setSetting(set);
+      setSyncStatuses(syncStats);
       setPajakValue(
         set.project_setting 
           ? set.project_setting.pajak_percentage.toString() 
@@ -103,6 +108,20 @@ export function RapContainer({ projectId }: RapContainerProps) {
     }
   };
 
+  const handleSyncNewItems = async () => {
+    if (!window.confirm('Yakin ingin sinkronkan item baru dari RAB? Item dan kategori baru yang belum ada di RAP akan ditambahkan.')) return;
+    setIsSyncingNew(true);
+    try {
+      const res = await rapService.syncNewItems(projectId);
+      alert(res.message);
+      await fetchData();
+    } catch (e: any) {
+      alert(e?.message || 'Gagal sinkronisasi item baru');
+    } finally {
+      setIsSyncingNew(false);
+    }
+  };
+
   const calculateTotals = () => {
     let totalRap = 0;
     let totalRab = 0;
@@ -154,28 +173,41 @@ export function RapContainer({ projectId }: RapContainerProps) {
             </div>
           </div>
           
-          <div className="flex items-center gap-3 bg-muted/50 px-4 py-2 rounded-lg border border-border/50">
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground font-medium mb-0.5">Pajak & Biaya Admin</p>
-              <div className="flex items-center gap-1.5 justify-end">
-                <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                  {effectivePajak.toFixed(2)}%
-                </span>
-                {isCustomSetting ? (
-                  <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Khusus</span>
-                ) : (
-                  <span className="text-[9px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Global</span>
-                )}
+          <div className="flex items-center gap-3">
+            {categories.length > 0 && (
+              <button
+                onClick={handleSyncNewItems}
+                disabled={isSyncingNew}
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400 rounded-md text-sm font-medium transition-colors disabled:opacity-50 border border-blue-200 dark:border-blue-800"
+              >
+                {isSyncingNew ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                <span className="hidden sm:inline">Sinkronkan Item Baru</span>
+              </button>
+            )}
+
+            <div className="flex items-center gap-3 bg-muted/50 px-4 py-2 rounded-lg border border-border/50">
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground font-medium mb-0.5">Pajak & Biaya Admin</p>
+                <div className="flex items-center gap-1.5 justify-end">
+                  <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
+                    {effectivePajak.toFixed(2)}%
+                  </span>
+                  {isCustomSetting ? (
+                    <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Khusus</span>
+                  ) : (
+                    <span className="text-[9px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Global</span>
+                  )}
+                </div>
               </div>
+              <div className="w-px h-8 bg-border mx-1" />
+              <button
+                onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
+                title="Atur Pajak"
+              >
+                <Settings2 className="w-5 h-5" />
+              </button>
             </div>
-            <div className="w-px h-8 bg-border mx-1" />
-            <button
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
-              title="Atur Pajak"
-            >
-              <Settings2 className="w-5 h-5" />
-            </button>
           </div>
         </div>
 
@@ -279,6 +311,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
                     key={category.id}
                     category={category}
                     pajakPct={effectivePajak}
+                    syncStatuses={syncStatuses}
                     onRefresh={fetchData}
                     projectId={projectId}
                     onDirtyChange={handleDirtyChange}

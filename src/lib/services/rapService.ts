@@ -99,4 +99,22 @@ export const rapService = {
     });
     return res;
   },
+
+  // --- RAB Sync ---
+
+  async syncNewItems(projectId: string | number): Promise<{ message: string; created_count: number }> {
+    return fetchApi(`/projects/${projectId}/rap/sync-new-items`, { method: 'POST' });
+  },
+
+  async getSyncStatus(projectId: string | number): Promise<Record<string, {
+    status: 'synced' | 'rab_changed' | 'rab_removed';
+    latest_rab?: { description: string; volume: number };
+    snapshot?: { description: string; volume: number };
+  }>> {
+    return fetchApi(`/projects/${projectId}/rap/sync-status`);
+  },
+
+  async syncFromRab(rapItemId: number): Promise<{ message: string; item: any }> {
+    return fetchApi(`/rap-items/${rapItemId}/sync-from-rab`, { method: 'POST' });
+  },
 };

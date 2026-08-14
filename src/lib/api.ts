@@ -62,6 +62,7 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
   };
 
   const config: RequestInit = {
+    cache: 'no-store', // Ensure dashboard data is always fresh and no client-side caching prevents auto-refreshes
     ...customConfig,
     headers: headersObj,
     credentials: 'include', // Automatically send cookies

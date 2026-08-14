@@ -17,6 +17,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
   const [categories, setCategories] = useState<RapCategory[]>([]);
   const [setting, setSetting] = useState<RapSettingResponse | null>(null);
   const [syncStatuses, setSyncStatuses] = useState<Record<string, RapSyncStatus>>({});
+  const [unsyncedNewCount, setUnsyncedNewCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,14 +33,16 @@ export function RapContainer({ projectId }: RapContainerProps) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [cats, set, syncStats] = await Promise.all([
+      const [cats, set, syncStats, unsyncedRes] = await Promise.all([
         rapService.getCategories(projectId),
         rapService.getSetting(projectId),
         rapService.getSyncStatus(projectId).catch(() => ({})), // Fallback to empty if error
+        rapService.getUnsyncedNewItemsCount(projectId).catch(() => ({ count: 0 })),
       ]);
       setCategories(cats);
       setSetting(set);
       setSyncStatuses(syncStats);
+      setUnsyncedNewCount(unsyncedRes.count);
       setPajakValue(
         set.project_setting 
           ? set.project_setting.pajak_percentage.toString() 
@@ -178,10 +181,15 @@ export function RapContainer({ projectId }: RapContainerProps) {
               <button
                 onClick={handleSyncNewItems}
                 disabled={isSyncingNew}
-                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400 rounded-md text-sm font-medium transition-colors disabled:opacity-50 border border-blue-200 dark:border-blue-800"
+                className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400 rounded-md text-sm font-medium transition-colors disabled:opacity-50 border border-blue-200 dark:border-blue-800 relative"
               >
                 {isSyncingNew ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
                 <span className="hidden sm:inline">Sinkronkan Item Baru</span>
+                {unsyncedNewCount > 0 && (
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[20px] text-center">
+                    {unsyncedNewCount}
+                  </span>
+                )}
               </button>
             )}
 
@@ -251,12 +259,34 @@ export function RapContainer({ projectId }: RapContainerProps) {
 
       {dirtyCategories.size > 0 && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-400 p-3 rounded-lg text-sm flex items-center gap-2 sticky top-4 z-10 shadow-sm backdrop-blur-sm">
-          <span className="relative flex h-3 w-3">
+          <span className="relative flex h-3 w-3 shrink-0">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-3 w-3 bg-amber-500"></span>
           </span>
-          <span className="font-medium">Ada perubahan yang belum disimpan!</span> 
-          Klik tombol &quot;Simpan Semua Perubahan&quot; di kategori yang bersangkutan.
+          <div>
+            <span className="font-medium">Ada perubahan yang belum disimpan!</span> 
+            <span className="hidden sm:inline"> Klik tombol &quot;Simpan Semua Perubahan&quot; di kategori yang bersangkutan.</span>
+          </div>
+        </div>
+      )}
+
+      {unsyncedNewCount > 0 && (
+        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-400 p-3 rounded-lg text-sm flex items-center gap-2 sticky top-4 z-10 shadow-sm backdrop-blur-sm">
+          <span className="relative flex h-3 w-3 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+          </span>
+          <div className="flex-1">
+            <span className="font-medium">Ada {unsyncedNewCount} item baru di RAB</span> yang belum disinkronkan ke RAP ini.
+          </div>
+          <button
+            onClick={handleSyncNewItems}
+            disabled={isSyncingNew}
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold transition-colors disabled:opacity-50"
+          >
+            {isSyncingNew ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+            Sinkronkan Sekarang
+          </button>
         </div>
       )}
 

@@ -106,6 +106,10 @@ export const rapService = {
     return fetchApi(`/projects/${projectId}/rap/sync-new-items`, { method: 'POST' });
   },
 
+  async getUnsyncedNewItemsCount(projectId: string | number): Promise<{ count: number }> {
+    return fetchApi(`/projects/${projectId}/rap/unsynced-rab-items-count`);
+  },
+
   async getSyncStatus(projectId: string | number): Promise<Record<string, {
     status: 'synced' | 'rab_changed' | 'rab_removed';
     latest_rab?: { description: string; volume: number };

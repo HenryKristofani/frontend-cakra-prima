@@ -443,20 +443,37 @@ export function DebtGroupDetail({ groupId, onBack }: { groupId: number; onBack: 
     } catch (e) { console.error(e); alert("Gagal menghapus pembayaran"); }
   };
 
-  const handleExportExcel = () => {
+  const handleExportExcel = async () => {
     if (!group) return;
     setIsSavingAll(true);
     try {
-      const url = `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api"}/debt-groups/${groupId}/export`;
+      const response = await fetchApi<Response>(`/debt-groups/${groupId}/export`, {
+        method: 'GET',
+        responseType: 'response',
+      });
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${group.name.replace(/\s+/g, "_")}.xlsx`;
+      
+      const disposition = response.headers.get('content-disposition');
+      let filename = `${group.name.replace(/\s+/g, "_")}.xlsx`;
+      if (disposition && disposition.indexOf('attachment') !== -1) {
+        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
+      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert("Gagal mengunduh file Excel");
+      alert(e?.message || "Gagal mengunduh file Excel");
     } finally {
       setIsSavingAll(false);
     }

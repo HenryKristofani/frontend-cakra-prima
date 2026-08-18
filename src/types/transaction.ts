@@ -2,6 +2,7 @@ export interface Project {
   id: number;
   name: string;
   status: "aktif" | "nonaktif";
+  kegiatan?: string | null;
   location?: string | null;
   rab_date?: string | null;
   is_isolated_cash?: boolean;

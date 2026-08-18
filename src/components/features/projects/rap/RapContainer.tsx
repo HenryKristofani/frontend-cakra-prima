@@ -30,6 +30,8 @@ export function RapContainer({ projectId }: RapContainerProps) {
   const [isSavingSetting, setIsSavingSetting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSyncingNew, setIsSyncingNew] = useState(false);
+  const [isExportingExcel, setIsExportingExcel] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
@@ -118,10 +120,32 @@ export function RapContainer({ projectId }: RapContainerProps) {
       const res = await rapService.syncNewItems(projectId);
       alert(res.message);
       await fetchData();
-    } catch (e: any) {
-      alert(e?.message || 'Gagal sinkronisasi item baru');
+    } catch (err: any) {
+      alert(err?.message || 'Gagal sinkronisasi item baru');
     } finally {
       setIsSyncingNew(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    setIsExportingExcel(true);
+    try {
+      await rapService.exportExcel(projectId);
+    } catch (err: any) {
+      alert(err?.message || 'Gagal export Excel');
+    } finally {
+      setIsExportingExcel(false);
+    }
+  };
+
+  const handleExportPdf = async () => {
+    setIsExportingPdf(true);
+    try {
+      await rapService.exportPdf(projectId);
+    } catch (err: any) {
+      alert(err?.message || 'Gagal export PDF');
+    } finally {
+      setIsExportingPdf(false);
     }
   };
 
@@ -177,6 +201,24 @@ export function RapContainer({ projectId }: RapContainerProps) {
           </div>
           
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportExcel}
+              disabled={isExportingExcel}
+              className="flex items-center gap-2 px-3 py-1.5 bg-green-50 hover:bg-green-100 text-green-700 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-400 rounded-md text-sm font-medium transition-colors disabled:opacity-50 border border-green-200 dark:border-green-800"
+            >
+              {isExportingExcel ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              <span className="hidden sm:inline">Export Excel</span>
+            </button>
+            
+            <button
+              onClick={handleExportPdf}
+              disabled={isExportingPdf}
+              className="flex items-center gap-2 px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 dark:text-rose-400 rounded-md text-sm font-medium transition-colors disabled:opacity-50 border border-rose-200 dark:border-rose-800"
+            >
+              {isExportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              <span className="hidden sm:inline">Export PDF</span>
+            </button>
+
             {categories.length > 0 && (
               <button
                 onClick={handleSyncNewItems}

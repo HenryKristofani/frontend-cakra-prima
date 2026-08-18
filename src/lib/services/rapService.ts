@@ -121,4 +121,60 @@ export const rapService = {
   async syncFromRab(rapItemId: number): Promise<{ message: string; item: any }> {
     return fetchApi(`/rap-items/${rapItemId}/sync-from-rab`, { method: 'POST' });
   },
+
+  // --- Export ---
+  
+  async exportExcel(projectId: string | number): Promise<void> {
+    const response = await fetchApi<Response>(`/projects/${projectId}/rap/export-excel`, {
+      method: 'GET',
+      responseType: 'response',
+    });
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    
+    const disposition = response.headers.get('content-disposition');
+    let filename = `RAP-Project-${projectId}.xlsx`;
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+    
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+
+  async exportPdf(projectId: string | number): Promise<void> {
+    const response = await fetchApi<Response>(`/projects/${projectId}/rap/export-pdf`, {
+      method: 'GET',
+      responseType: 'response',
+    });
+    
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    
+    const disposition = response.headers.get('content-disposition');
+    let filename = `RAP-Project-${projectId}.pdf`;
+    if (disposition && disposition.indexOf('attachment') !== -1) {
+      const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+      if (matches != null && matches[1]) {
+        filename = matches[1].replace(/['"]/g, '');
+      }
+    }
+    
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
 };

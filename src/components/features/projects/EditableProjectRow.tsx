@@ -15,6 +15,7 @@ interface EditableProjectRowProps {
 
 export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDelete, isPending }: EditableProjectRowProps) {
   const [name, setName] = useState(project.name);
+  const [kegiatan, setKegiatan] = useState(project.kegiatan ?? "");
   const [location, setLocation] = useState(project.location ?? "");
   const [rabDate, setRabDate] = useState(project.rab_date ?? "");
   const [status, setStatus] = useState<"aktif" | "nonaktif">(
@@ -48,6 +49,7 @@ export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDel
     try {
       await onUpdate(project.id, {
         name,
+        kegiatan: kegiatan || null,
         location,
         rab_date: rabDate || null,
         status,
@@ -76,6 +78,8 @@ export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDel
     }
   };
 
+  const inputBase = "w-full min-w-[200px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50";
+
   return (
     <tr className="bg-card hover:bg-muted/50 transition-colors text-foreground">
       <td className="px-4 py-3 font-medium text-xs text-muted-foreground text-center">{project.id}</td>
@@ -87,8 +91,22 @@ export function EditableProjectRow({ project, onUpdate, onChange, onSaved, onDel
             setName(e.target.value);
             notifyChange({ name: e.target.value });
           }}
-          placeholder="Nama Project..."
-          className="w-full min-w-[200px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+          disabled={isSaving || isDeleting}
+          className={inputBase}
+          placeholder="Nama Proyek"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          type="text"
+          value={kegiatan}
+          onChange={(e) => {
+            setKegiatan(e.target.value);
+            notifyChange({ kegiatan: e.target.value });
+          }}
+          disabled={isSaving || isDeleting}
+          className={inputBase}
+          placeholder="Kegiatan (Opsional)"
         />
       </td>
       <td className="px-4 py-3">

@@ -10,6 +10,7 @@ interface NewProjectRowProps {
 
 export function NewProjectRow({ onAdd }: NewProjectRowProps) {
   const [name, setName] = useState("");
+  const [kegiatan, setKegiatan] = useState("");
   const [location, setLocation] = useState("");
   const [rabDate, setRabDate] = useState("");
   const [status, setStatus] = useState<"aktif" | "nonaktif">("aktif");
@@ -22,12 +23,14 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
     try {
       await onAdd({
         name,
+        kegiatan: kegiatan || null,
         location: location || null,
         rab_date: rabDate || null,
         status,
         is_isolated_cash: isIsolatedCash,
       });
       setName("");
+      setKegiatan("");
       setLocation("");
       setRabDate("");
       setStatus("aktif");
@@ -40,6 +43,8 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
     }
   };
 
+  const inputBase = "w-full min-w-[200px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50";
+
   return (
     <tr className="bg-muted/20 border-b-2 border-border text-foreground">
       <td className="px-4 py-3 font-medium text-xs text-muted-foreground text-center">BARU</td>
@@ -48,8 +53,19 @@ export function NewProjectRow({ onAdd }: NewProjectRowProps) {
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nama Project..."
-          className="w-full min-w-[200px] bg-background border border-border rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
+          disabled={isSubmitting}
+          className={inputBase}
+          placeholder="Nama Proyek"
+        />
+      </td>
+      <td className="px-4 py-3">
+        <input
+          type="text"
+          value={kegiatan}
+          onChange={(e) => setKegiatan(e.target.value)}
+          disabled={isSubmitting}
+          className={inputBase}
+          placeholder="Kegiatan (Opsional)"
         />
       </td>
       <td className="px-4 py-3">

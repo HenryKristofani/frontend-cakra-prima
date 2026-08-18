@@ -83,7 +83,8 @@ export function ProjectTable({
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
             <tr>
               <th className="px-4 py-3 font-medium text-center w-16">ID</th>
-              <th className="px-4 py-3 font-medium">Nama Project</th>
+              <th className="px-4 py-3 font-medium">Nama Proyek</th>
+              <th className="px-4 py-3 font-medium">Kegiatan</th>
               <th className="px-4 py-3 font-medium">Lokasi</th>
               <th className="px-4 py-3 font-medium">Tanggal RAB</th>
               <th className="px-4 py-3 font-medium w-40">Status</th>

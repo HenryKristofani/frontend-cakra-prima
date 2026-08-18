@@ -80,7 +80,11 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   // Live preview — use dirty values if editing, otherwise use server-computed values
   const parsedVolume = parseFloat(volume) || 0;
   const parsedUnitPrice = parseFloat(unitPrice) || 0;
-  const effectiveUnitPriceLive = parsedUnitPrice * (1 - pajakPct / 100);
+  // For RAB-sourced items, unit_price already has pajak deducted (RAP = RAB * (1 - pajak%)).
+  // Applying pajak again here would cause double-deduction. For manual items, apply normally.
+  const effectiveUnitPriceLive = item.source_rab_item_id
+    ? parsedUnitPrice // Already net of pajak — do NOT deduct again
+    : parsedUnitPrice * (1 - pajakPct / 100);
   const totalLive = parsedVolume * effectiveUnitPriceLive;
 
   const rowClass = isDirty
@@ -238,13 +242,22 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
 
       {/* Harga Satuan (nominal RAP) */}
       <td className="px-3 py-1.5 border-r border-border/50 align-top w-28">
-        <input
-          type="number"
-          value={unitPrice}
-          onChange={(e) => onQuickChange(item, 'unit_price', e.target.value)}
-          className={inputRightClass(errors?.unit_price)}
-        />
-        {errors?.unit_price && <p className="text-[10px] text-red-500 mt-0.5">{errors.unit_price}</p>}
+        {item.source_rab_item_id ? (
+          <div className="w-full px-2 py-1 mt-0.5 text-right text-xs font-semibold text-muted-foreground tabular-nums bg-muted/30 border border-transparent rounded">
+            {formatCurrency(Number(unitPrice)).replace('Rp', '').trim()}
+          </div>
+        ) : (
+          <>
+            {/* Read-only per keputusan saat ini untuk item RAB, form input di bawah tetap dipertahankan & bisa diaktifkan kembali jika diperlukan */}
+            <input
+              type="number"
+              value={unitPrice}
+              onChange={(e) => onQuickChange(item, 'unit_price', e.target.value)}
+              className={inputRightClass(errors?.unit_price)}
+            />
+            {errors?.unit_price && <p className="text-[10px] text-red-500 mt-0.5">{errors.unit_price}</p>}
+          </>
+        )}
       </td>
 
       {/* Harga Efektif (preview setelah pajak) */}

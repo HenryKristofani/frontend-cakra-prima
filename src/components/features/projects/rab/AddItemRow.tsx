@@ -17,7 +17,7 @@ export function AddItemRow({ categoryId, onRefresh }: AddItemRowProps) {
   const [status, setStatus] = useState<'aktif' | 'dikurangi'>('aktif');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const SATUANS = ['m', 'm2', 'm3', 'm4', 'Unit', 'Ls', 'Titik', 'bh', 'ls', 'kg', 'ton', 'zak'];
+  const SATUANS = ['m', 'm2', 'm3', 'm4', 'Unit', 'LS', 'Titik', 'Buah', 'Kg', 'Ton', 'Zak', 'Liter'];
 
   const handleSubmit = async () => {
     if (!description.trim()) return alert('Uraian wajib diisi');

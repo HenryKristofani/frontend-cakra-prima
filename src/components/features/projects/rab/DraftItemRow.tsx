@@ -16,7 +16,7 @@ export interface DraftItem {
   errors?: Record<string, string>;
 }
 
-const SATUANS = ['m', 'm2', 'm3', 'm4', 'Unit', 'Ls', 'Titik', 'bh', 'ls', 'kg', 'ton', 'zak'];
+const SATUANS = ['m', 'm2', 'm3', 'm4', 'Unit', 'LS', 'Titik', 'Buah', 'Kg', 'Ton', 'Zak', 'Liter'];
 
 interface DraftItemRowProps {
   draft: DraftItem;

@@ -7,6 +7,7 @@ import { Transaction, Project, Account } from "@/types/transaction";
 import { fetchApi } from "@/lib/api";
 import { NewTransactionRow } from "./NewTransactionRow";
 import { EditableTransactionRow } from "./EditableTransactionRow";
+import { TransactionImportModal } from "./TransactionImportModal";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000/api";
 
@@ -48,6 +49,7 @@ export function TransactionTable({
   const activeMonth = searchParams.get("month");
 
   const [isExporting, setIsExporting] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [rapItems, setRapItems] = useState<Array<{ id: number; description: string }>>([]);
@@ -258,6 +260,13 @@ export function TransactionTable({
             {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
             Export Excel
           </button>
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            Import CSV
+          </button>
         </div>
       </div>
 
@@ -380,6 +389,19 @@ export function TransactionTable({
             </button>
           </div>
         </div>
+      )}
+      
+      {showImport && (
+        <TransactionImportModal
+          onClose={() => setShowImport(false)}
+          onImported={() => {
+            setShowImport(false);
+            // Refresh table
+            changePage(1); // Force a reload from the parent component
+          }}
+          projects={projects}
+          accounts={accounts}
+        />
       )}
     </div>
   );

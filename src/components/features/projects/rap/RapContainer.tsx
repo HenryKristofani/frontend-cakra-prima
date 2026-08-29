@@ -7,6 +7,7 @@ import { RapCategorySection } from './RapCategorySection';
 import { formatCurrency } from '@/utils/formatters';
 import { Settings2, Loader2, Save, FileText, RefreshCw } from 'lucide-react';
 import { rapService } from '@/lib/services/rapService';
+import Decimal from 'decimal.js';
 import type { RapSyncStatus } from './RapExistingItemRow';
 
 interface RapContainerProps {
@@ -150,19 +151,19 @@ export function RapContainer({ projectId }: RapContainerProps) {
   };
 
   const calculateTotals = () => {
-    let totalRap = 0;
-    let totalRab = 0;
+    let totalRap = new Decimal(0);
+    let totalRab = new Decimal(0);
     const calcCat = (cat: RapCategory) => {
       cat.items.forEach(item => {
-        totalRap += item.total_price;
+        totalRap = totalRap.plus(new Decimal(item.total_price || 0));
         if (item.source_rab_item) {
-          totalRab += (item.volume * item.source_rab_item.unit_price);
+          totalRab = totalRab.plus(new Decimal(item.volume || 0).times(new Decimal(item.source_rab_item.unit_price || 0)));
         }
       });
       cat.children.forEach(calcCat);
     };
     categories.forEach(calcCat);
-    return { totalRap, totalRab };
+    return { totalRap: totalRap.toNumber(), totalRab: totalRab.toNumber() };
   };
 
   if (isLoading) {

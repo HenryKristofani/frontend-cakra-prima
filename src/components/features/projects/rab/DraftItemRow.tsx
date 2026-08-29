@@ -3,6 +3,7 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
+import Decimal from 'decimal.js';
 
 export interface DraftItem {
   /** Client-only key untuk identifikasi sebelum punya real ID */
@@ -39,8 +40,12 @@ export const DraftItemRow = React.memo(function DraftItemRow({
   onChange,
   onRemove,
 }: DraftItemRowProps) {
-  const calculatedTotal =
-    (parseFloat(draft.volume) || 0) * (parseFloat(draft.unit_price) || 0);
+  let calculatedTotal: number | null = null;
+  try {
+    if (draft.volume && draft.unit_price) {
+      calculatedTotal = new Decimal(draft.volume).times(new Decimal(draft.unit_price)).toNumber();
+    }
+  } catch { /* invalid input, leave null */ }
 
   return (
     <tr className="bg-emerald-50/70 dark:bg-emerald-900/20 border-b border-emerald-200 dark:border-emerald-800 text-foreground">
@@ -76,7 +81,7 @@ export const DraftItemRow = React.memo(function DraftItemRow({
       <td className="px-3 py-2 border-r border-emerald-200/50 dark:border-emerald-800/50 align-top w-20">
         <input
           type="number"
-          step="0.01"
+          step="any"
           value={draft.volume}
           onChange={(e) => onChange(draft._key, 'volume', e.target.value)}
           placeholder="Vol"
@@ -104,6 +109,7 @@ export const DraftItemRow = React.memo(function DraftItemRow({
       <td className="px-3 py-2 border-r border-emerald-200/50 dark:border-emerald-800/50 align-top w-28">
         <input
           type="number"
+          step="any"
           value={draft.unit_price}
           onChange={(e) => onChange(draft._key, 'unit_price', e.target.value)}
           placeholder="Hrg Sat"
@@ -116,7 +122,7 @@ export const DraftItemRow = React.memo(function DraftItemRow({
         )}
       </td>
       <td className="px-3 py-2 border-r border-emerald-200/50 dark:border-emerald-800/50 text-right text-xs font-medium text-emerald-700 dark:text-emerald-400 align-top w-28 pt-3">
-        {calculatedTotal > 0 ? formatCurrency(calculatedTotal) : '-'}
+        {calculatedTotal !== null && calculatedTotal > 0 ? formatCurrency(calculatedTotal) : '-'}
       </td>
       {/* Rekapitulasi */}
       <td className="px-3 py-2 border-r border-emerald-200/50 dark:border-emerald-800/50 text-center text-xs text-muted-foreground align-top w-32 pt-3">-</td>

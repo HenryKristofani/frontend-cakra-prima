@@ -125,7 +125,7 @@ export function TransactionImportModal({ onClose, onImported, projects, accounts
   };
 
   const fmtCurrency = (v: number) =>
-    v > 0 ? `Rp ${v.toLocaleString('id-ID')}` : '-';
+    v > 0 ? `Rp ${new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v)}` : '-';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

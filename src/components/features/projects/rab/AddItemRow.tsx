@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { rabService } from '@/lib/services/rabService';
+import Decimal from 'decimal.js';
 
 interface AddItemRowProps {
   categoryId: number;
@@ -21,17 +22,18 @@ export function AddItemRow({ categoryId, onRefresh }: AddItemRowProps) {
 
   const handleSubmit = async () => {
     if (!description.trim()) return alert('Uraian wajib diisi');
-    const vol = parseFloat(volume);
-    const price = parseFloat(unitPrice);
-    if (isNaN(vol) || isNaN(price)) return alert('Volume dan Harga Satuan harus berupa angka valid');
+    if (!volume || !unitPrice) return alert('Volume dan Harga Satuan harus diisi');
+    let vol: Decimal, price: Decimal;
+    try { vol = new Decimal(volume); price = new Decimal(unitPrice); }
+    catch { return alert('Volume dan Harga Satuan harus berupa angka valid'); }
 
     setIsSubmitting(true);
     try {
       await rabService.createItem(categoryId, {
         description: description.trim(),
-        volume: vol,
+        volume: vol.toNumber(),
         unit,
-        unit_price: price,
+        unit_price: price.toString(),
         status,
       });
       setDescription('');
@@ -64,7 +66,7 @@ export function AddItemRow({ categoryId, onRefresh }: AddItemRowProps) {
       <td className="px-3 py-1.5 border-r border-border/50 w-20">
         <input
           type="number"
-          step="0.01"
+          step="any"
           value={volume}
           onChange={(e) => setVolume(e.target.value)}
           placeholder="Vol"
@@ -87,6 +89,7 @@ export function AddItemRow({ categoryId, onRefresh }: AddItemRowProps) {
       <td className="px-3 py-1.5 border-r border-border/50 w-28">
         <input
           type="number"
+          step="any"
           value={unitPrice}
           onChange={(e) => setUnitPrice(e.target.value)}
           placeholder="Hrg Sat"
@@ -96,9 +99,12 @@ export function AddItemRow({ categoryId, onRefresh }: AddItemRowProps) {
       
       {/* Jumlah Harga */}
       <td className="px-3 py-1.5 border-r border-border/50 text-right text-muted-foreground text-xs font-medium w-28">
-        {(parseFloat(volume) || 0) * (parseFloat(unitPrice) || 0)
-          ? ((parseFloat(volume) || 0) * (parseFloat(unitPrice) || 0)).toLocaleString('id-ID')
-          : '-'}
+        {volume && unitPrice && (() => {
+          try {
+            const total = new Decimal(volume).times(new Decimal(unitPrice));
+            return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(total.toNumber());
+          } catch { return '-'; }
+        })()}
       </td>
       
       {/* Rekapitulasi (empty for items) */}

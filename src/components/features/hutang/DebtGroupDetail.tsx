@@ -631,7 +631,7 @@ export function DebtGroupDetail({ groupId, onBack }: { groupId: number; onBack: 
                 {/* Total Hutang */}
                 <tr className="bg-yellow-300 text-black border-b border-black font-bold">
                   <td colSpan={3} className="border-r border-black px-4 py-2 text-center uppercase">TOTAL HUTANG</td>
-                  <td className="border-r border-black px-4 py-2 text-right text-base">Rp {Number(group.total_amount).toLocaleString('id-ID')}</td>
+                  <td className="border-r border-black px-4 py-2 text-right text-base">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(group.total_amount))}</td>
                   <td></td>
                 </tr>
 
@@ -670,7 +670,7 @@ export function DebtGroupDetail({ groupId, onBack }: { groupId: number; onBack: 
                 {/* Sisa Hutang */}
                 <tr className="bg-background text-foreground font-bold">
                   <td colSpan={3} className="border-r border-black px-4 py-3 text-center uppercase">SISA HUTANG</td>
-                  <td className="border-r border-black px-4 py-3 text-right text-rose-500 text-lg">Rp {Number(group.remaining_amount).toLocaleString('id-ID')}</td>
+                  <td className="border-r border-black px-4 py-3 text-right text-rose-500 text-lg">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(group.remaining_amount))}</td>
                   <td></td>
                 </tr>
               </tbody>

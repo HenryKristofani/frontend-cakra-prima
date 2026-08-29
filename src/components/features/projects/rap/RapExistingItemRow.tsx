@@ -5,6 +5,7 @@ import { RotateCcw, RefreshCw, AlertTriangle, Loader2 } from 'lucide-react';
 import { RapItem } from '@/types/rap';
 import { formatCurrency } from '@/utils/formatters';
 import { rapService } from '@/lib/services/rapService';
+import Decimal from 'decimal.js';
 
 export interface RapDirtyItemState {
   description: string;
@@ -78,14 +79,20 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   const uniqueUnits = SATUANS.includes(item.unit) ? SATUANS : [...SATUANS, item.unit];
 
   // Live preview — use dirty values if editing, otherwise use server-computed values
-  const parsedVolume = parseFloat(volume) || 0;
-  const parsedUnitPrice = parseFloat(unitPrice) || 0;
-  // For RAB-sourced items, unit_price already has pajak deducted (RAP = RAB * (1 - pajak%)).
-  // Applying pajak again here would cause double-deduction. For manual items, apply normally.
-  const effectiveUnitPriceLive = item.source_rab_item_id
-    ? parsedUnitPrice // Already net of pajak — do NOT deduct again
-    : parsedUnitPrice * (1 - pajakPct / 100);
-  const totalLive = parsedVolume * effectiveUnitPriceLive;
+  // Use Decimal.js to prevent JS float precision loss on 15+ significant digit values
+  let effectiveUnitPriceLive = 0;
+  let totalLive = 0;
+  try {
+    const decVol = new Decimal(volume || '0');
+    const decPrice = new Decimal(unitPrice || '0');
+    // For RAB-sourced items, unit_price already has pajak deducted (RAP = RAB * (1 - pajak%)).
+    // Applying pajak again here would cause double-deduction. For manual items, apply normally.
+    const decEffective = item.source_rab_item_id
+      ? decPrice
+      : decPrice.times(new Decimal(1).minus(new Decimal(pajakPct).dividedBy(100)));
+    effectiveUnitPriceLive = decEffective.toNumber();
+    totalLive = decVol.times(decEffective).toNumber();
+  } catch { /* invalid input, leave 0 */ }
 
   const rowClass = isDirty
     ? 'bg-amber-50/70 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800 text-foreground group'
@@ -214,7 +221,7 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
       <td className="px-3 py-1.5 border-r border-border/50 align-top w-20">
         <input
           type="number"
-          step="0.01"
+          step="any"
           value={volume}
           onChange={(e) => onQuickChange(item, 'volume', e.target.value)}
           className={inputRightClass(errors?.volume)}
@@ -237,7 +244,7 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
 
       {/* Harga RAB (View only) */}
       <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs text-muted-foreground align-top pt-2.5 tabular-nums bg-muted/5 w-28">
-        {item.source_rab_item ? formatCurrency(item.source_rab_item.unit_price).replace('Rp', '').trim() : '-'}
+        {item.source_rab_item ? formatCurrency(Number(item.source_rab_item.unit_price)).replace('Rp', '').trim() : '-'}
       </td>
 
       {/* Harga Satuan (nominal RAP) */}
@@ -251,6 +258,7 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
             {/* Read-only per keputusan saat ini untuk item RAB, form input di bawah tetap dipertahankan & bisa diaktifkan kembali jika diperlukan */}
             <input
               type="number"
+              step="any"
               value={unitPrice}
               onChange={(e) => onQuickChange(item, 'unit_price', e.target.value)}
               className={inputRightClass(errors?.unit_price)}
@@ -269,7 +277,11 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
 
       {/* Jumlah RAB (View only) */}
       <td className="px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums text-muted-foreground bg-muted/5 w-32">
-        {item.source_rab_item ? formatCurrency(parsedVolume * item.source_rab_item.unit_price).replace('Rp', '').trim() : '-'}
+        {item.source_rab_item ? (() => {
+          try {
+            return formatCurrency(new Decimal(volume || '0').times(new Decimal(item.source_rab_item.unit_price)).toNumber()).replace('Rp', '').trim();
+          } catch { return '-'; }
+        })() : '-'}
       </td>
 
       {/* Total Harga Efektif (Jumlah RAP) */}

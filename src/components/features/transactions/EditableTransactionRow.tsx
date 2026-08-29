@@ -190,7 +190,7 @@ export function EditableTransactionRow({
         />
       </td>
       <td className="px-4 py-3 font-semibold text-sm text-right whitespace-nowrap">
-        {trx.rekap_saldo !== undefined ? trx.rekap_saldo.toLocaleString("id-ID") : "-"}
+        {trx.rekap_saldo !== undefined ? new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(trx.rekap_saldo) : "-"}
       </td>
       {lockedProjectId && (
         <td className="px-4 py-3">

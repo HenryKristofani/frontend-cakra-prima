@@ -6,6 +6,7 @@ import { formatCurrency } from '@/utils/formatters';
 import { Edit2, Trash2, Loader2, ListTodo, Plus, Save, AlertCircle } from 'lucide-react';
 import { ProgressReportPanel } from './ProgressReportPanel';
 import { rabService } from '@/lib/services/rabService';
+import Decimal from 'decimal.js';
 import { AddCategoryForm } from './AddCategoryForm';
 import { DraftItemRow, DraftItem } from './DraftItemRow';
 import { ExistingItemRow, DirtyItemState } from './ExistingItemRow';
@@ -274,18 +275,18 @@ export function RabCategorySection({
   };
 
   // ─── Total calculator ────────────────────────────────────────────────────────
-  const calculateTotalRecursively = (cat: RabCategory): number => {
+  const calculateTotalRecursively = (cat: RabCategory): Decimal => {
     const itemsTotal = cat.items.reduce(
-      (sum, item) => sum + (item.status !== 'dikurangi' ? item.total_price : 0),
-      0,
+      (sum, item) => sum.plus(item.status !== 'dikurangi' ? new Decimal(item.total_price || 0) : new Decimal(0)),
+      new Decimal(0),
     );
     const childrenTotal = cat.children.reduce(
-      (sum, child) => sum + calculateTotalRecursively(child),
-      0,
+      (sum, child) => sum.plus(calculateTotalRecursively(child)),
+      new Decimal(0),
     );
-    return itemsTotal + childrenTotal;
+    return itemsTotal.plus(childrenTotal);
   };
-  const categoryTotal = calculateTotalRecursively(category);
+  const categoryTotal = calculateTotalRecursively(category).toNumber();
 
   // ─── Unsaved changes indicator (only shown on Depth > 0 where items exist) ──
   const pendingCount = draftItems.length + dirtyItems.size;

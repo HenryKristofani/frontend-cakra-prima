@@ -99,9 +99,9 @@ export function DebtGroupTable({
               {data?.data.map((group) => (
                 <tr key={group.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-6 py-4 font-medium">{group.name}</td>
-                  <td className="px-6 py-4 text-right">Rp {group.total_amount.toLocaleString('id-ID')}</td>
+                  <td className="px-6 py-4 text-right">Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(group.total_amount)}</td>
                   <td className="px-6 py-4 text-right font-bold text-rose-500">
-                    Rp {group.remaining_amount.toLocaleString('id-ID')}
+                    Rp {new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(group.remaining_amount)}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <span className="inline-flex items-center justify-center bg-brand/10 text-brand rounded-full px-2.5 py-0.5 text-xs font-medium">

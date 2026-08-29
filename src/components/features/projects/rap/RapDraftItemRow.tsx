@@ -3,6 +3,7 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 import { formatCurrency } from '@/utils/formatters';
+import Decimal from 'decimal.js';
 
 export interface RapDraftItem {
   /** Client-only key untuk identifikasi sebelum punya real ID */
@@ -36,9 +37,17 @@ export const RapDraftItemRow = React.memo(function RapDraftItemRow({
   onChange,
   onRemove,
 }: RapDraftItemRowProps) {
-  const rawTotal = (parseFloat(draft.volume) || 0) * (parseFloat(draft.unit_price) || 0);
-  const effectiveUnitPrice = (parseFloat(draft.unit_price) || 0) * (1 - pajakPct / 100);
-  const effectiveTotal = (parseFloat(draft.volume) || 0) * effectiveUnitPrice;
+  let effectiveUnitPrice = 0;
+  let effectiveTotal = 0;
+  try {
+    if (draft.volume && draft.unit_price) {
+      const decVol = new Decimal(draft.volume);
+      const decPrice = new Decimal(draft.unit_price);
+      const decEffective = decPrice.times(new Decimal(1).minus(new Decimal(pajakPct).dividedBy(100)));
+      effectiveUnitPrice = decEffective.toNumber();
+      effectiveTotal = decVol.times(decEffective).toNumber();
+    }
+  } catch { /* invalid input */ }
 
   const inputBase =
     'w-full bg-white dark:bg-background border rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500/50';
@@ -69,7 +78,7 @@ export const RapDraftItemRow = React.memo(function RapDraftItemRow({
       <td className="px-3 py-2 border-r border-emerald-200/50 dark:border-emerald-800/50 w-20">
         <input
           type="number"
-          step="0.01"
+          step="any"
           value={draft.volume}
           onChange={(e) => onChange(draft._key, 'volume', e.target.value)}
           placeholder="Vol"
@@ -104,6 +113,7 @@ export const RapDraftItemRow = React.memo(function RapDraftItemRow({
       <td className="px-3 py-2 border-r border-emerald-200/50 dark:border-emerald-800/50 w-28">
         <input
           type="number"
+          step="any"
           value={draft.unit_price}
           onChange={(e) => onChange(draft._key, 'unit_price', e.target.value)}
           placeholder="Hrg Sat"

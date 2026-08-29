@@ -61,7 +61,9 @@ export interface CreateItemPayload {
   description: string;
   volume: number;
   unit: string;
-  unit_price: number;
+  // Accept string to preserve full DECIMAL(24,10) precision across JSON serialization.
+  // Backend validates and stores the raw string value without float conversion.
+  unit_price: number | string;
   status: 'aktif' | 'dikurangi' | 'dibatalkan';
 }
 
@@ -69,7 +71,7 @@ export interface UpdateItemPayload {
   description?: string;
   volume?: number;
   unit?: string;
-  unit_price?: number;
+  unit_price?: number | string;
   status?: 'aktif' | 'dikurangi' | 'dibatalkan';
 }
 

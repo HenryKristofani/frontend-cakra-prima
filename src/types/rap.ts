@@ -6,18 +6,18 @@ export interface RapItem {
   description: string;
   volume: number;
   unit: string;
-  unit_price: number;         // Nominal asli (sebelum potongan)
-  effective_unit_price: number; // Setelah potongan%
-  total_price: number;          // volume × effective_unit_price
-  total_realisasi: number;      // SUM(transactions.expense) WHERE rap_item_id = id
-  selisih_laba_rugi: number;    // total_price - total_realisasi
+  unit_price: string | number;         // Serialized as string from backend to prevent JS float loss
+  effective_unit_price: string | number; // Setelah potongan%
+  total_price: string | number;          // volume × effective_unit_price (bcmath precision)
+  total_realisasi: number;               // SUM(transactions.expense)
+  selisih_laba_rugi: string | number;    // total_price - total_realisasi
   pajak_percentage: number;
   sort_order: number;
   source_rab_item_id?: number | null;
   source_rab_item?: {
     id: number;
     description: string;
-    unit_price: number;
+    unit_price: string | number;  // String from backend
   };
 }
 
@@ -85,7 +85,7 @@ export interface CreateRapItemPayload {
   description: string;
   volume: number;
   unit: string;
-  unit_price: number;
+  unit_price: number | string;  // String to preserve full decimal precision
   sort_order?: number;
 }
 
@@ -93,6 +93,6 @@ export interface UpdateRapItemPayload {
   description?: string;
   volume?: number;
   unit?: string;
-  unit_price?: number;
+  unit_price?: number | string;  // String to preserve full decimal precision
   sort_order?: number;
 }

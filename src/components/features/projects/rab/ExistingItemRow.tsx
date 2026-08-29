@@ -4,6 +4,7 @@ import React from 'react';
 import { RotateCcw, Edit2, ListTodo } from 'lucide-react';
 import { RabItem } from '@/types/rab';
 import { formatCurrency } from '@/utils/formatters';
+import Decimal from 'decimal.js';
 
 export interface DirtyItemState {
   description: string;
@@ -56,7 +57,12 @@ export const ExistingItemRow = React.memo(function ExistingItemRow({
   const errors = isDirty ? dirtyState.errors : undefined;
 
   const uniqueUnits = SATUANS.includes(item.unit) ? SATUANS : [...SATUANS, item.unit];
-  const calculatedTotal = (parseFloat(volume) || 0) * (parseFloat(unitPrice) || 0);
+  let calculatedTotal: number | null = null;
+  try {
+    if (volume && unitPrice) {
+      calculatedTotal = new Decimal(volume).times(new Decimal(unitPrice)).toNumber();
+    }
+  } catch { /* invalid input */ }
 
   // Styling based on dirty state
   const rowClass = isDirty
@@ -170,7 +176,7 @@ export const ExistingItemRow = React.memo(function ExistingItemRow({
       <td className="px-3 py-1.5 border-r border-border/50 align-top w-20">
         <input
           type="number"
-          step="0.01"
+          step="any"
           value={volume}
           onChange={(e) => onQuickChange(item, 'volume', e.target.value)}
           className={inputRightClass(errors?.volume)}
@@ -195,6 +201,7 @@ export const ExistingItemRow = React.memo(function ExistingItemRow({
       <td className="px-3 py-1.5 border-r border-border/50 align-top w-28">
         <input
           type="number"
+          step="any"
           value={unitPrice}
           onChange={(e) => onQuickChange(item, 'unit_price', e.target.value)}
           className={inputRightClass(errors?.unit_price)}
@@ -204,7 +211,7 @@ export const ExistingItemRow = React.memo(function ExistingItemRow({
 
       {/* Jumlah Harga (live preview) */}
       <td className={`px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums ${isDirty ? 'font-medium text-amber-700 dark:text-amber-400' : 'font-medium'}`}>
-        {calculatedTotal > 0 ? formatCurrency(calculatedTotal).replace('Rp', '').trim() : '-'}
+        {calculatedTotal !== null && calculatedTotal > 0 ? formatCurrency(calculatedTotal).replace('Rp', '').trim() : '-'}
       </td>
       
       {/* Rekapitulasi */}

@@ -8,7 +8,8 @@ import { RabCategorySection } from './RabCategorySection';
 import { RabPenguranganSection } from './RabPenguranganSection';
 import { AddCategoryForm } from './AddCategoryForm';
 import { rabService } from '@/lib/services/rabService';
-import { Loader2, Download } from 'lucide-react';
+import { Loader2, Download, Upload } from 'lucide-react';
+import { RabImportModal } from './RabImportModal';
 
 interface RabContainerProps {
   initialData: RabSummary;
@@ -19,6 +20,7 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
   const [data, setData] = useState<RabSummary>(initialData);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const { categories, deductions, rounded_total, final_total, total_rab_aktif, total_deduction } = data;
 
@@ -73,6 +75,7 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
   const hasNoData = categories.length === 0 && deductions.length === 0;
 
   return (
+    <>
     <div className={`space-y-6 transition-opacity relative ${isRefreshing ? 'opacity-70 pointer-events-none' : ''}`}>
       {/* Loading overlay for entire container */}
       {isRefreshing && (
@@ -101,18 +104,43 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
         </div>
       ) : (
         <>
+          {/* Disclaimer presisi */}
+          <div className="mb-4 bg-blue-50 dark:bg-blue-950/30 border-l-4 border-blue-500 p-4 rounded-r-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  <strong className="font-medium">Catatan Presisi:</strong> Untuk mereplikasi "Jumlah Harga" (Volume × Harga Satuan) sama persis dengan file Excel/BOQ asli, pastikan input/paste <strong>Harga Satuan</strong> menggunakan nilai desimal aslinya yang lengkap (bukan angka yang sudah dibulatkan). Perhitungan selalu menggunakan nilai asli untuk akurasi penuh.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Main RAB Flat Table */}
           <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm flex flex-col">
             <div className="px-4 py-3 bg-blue-600 text-white flex justify-between items-center">
               <h2 className="font-bold text-sm tracking-wide uppercase">Rencana Anggaran Biaya (R.A.B)</h2>
-              <button
-                onClick={handleExport}
-                disabled={isExporting}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white text-blue-700 hover:bg-blue-50 rounded shadow-sm disabled:opacity-70 transition-colors"
-              >
-                {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-                Export Excel
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white/20 text-white hover:bg-white/30 rounded shadow-sm transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Import Excel
+                </button>
+                <button
+                  onClick={handleExport}
+                  disabled={isExporting}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white text-blue-700 hover:bg-blue-50 rounded shadow-sm disabled:opacity-70 transition-colors"
+                >
+                  {isExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                  Export Excel
+                </button>
+              </div>
             </div>
 
             <div className="overflow-x-auto">
@@ -215,5 +243,13 @@ export function RabContainer({ initialData, projectId }: RabContainerProps) {
         </>
       )}
     </div>
+    {showImportModal && (
+      <RabImportModal
+        projectId={projectId}
+        onClose={() => setShowImportModal(false)}
+        onImported={() => { setShowImportModal(false); refreshData(); }}
+      />
+    )}
+    </>
   );
 }

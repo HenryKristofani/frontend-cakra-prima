@@ -5,6 +5,7 @@ import { RapCategory, RapItem } from '@/types/rap';
 import { formatCurrency } from '@/utils/formatters';
 import { Edit2, Trash2, Loader2, Plus, Save, AlertCircle } from 'lucide-react';
 import { rapService } from '@/lib/services/rapService';
+import Decimal from 'decimal.js';
 import { AddRapCategoryForm } from './AddRapCategoryForm';
 import { RapDraftItemRow, RapDraftItem } from './RapDraftItemRow';
 import { RapExistingItemRow, RapDirtyItemState, RapSyncStatus } from './RapExistingItemRow';
@@ -245,12 +246,12 @@ export function RapCategorySection({
     }
   };
 
-  const calculateTotalRecursively = (cat: RapCategory): number => {
-    const itemsTotal = cat.items.reduce((sum, item) => sum + item.total_price, 0);
-    const childrenTotal = cat.children.reduce((sum, child) => sum + calculateTotalRecursively(child), 0);
-    return itemsTotal + childrenTotal;
+  const calculateTotalRecursively = (cat: RapCategory): Decimal => {
+    const itemsTotal = cat.items.reduce((sum, item) => sum.plus(new Decimal(item.total_price || 0)), new Decimal(0));
+    const childrenTotal = cat.children.reduce((sum, child) => sum.plus(calculateTotalRecursively(child)), new Decimal(0));
+    return itemsTotal.plus(childrenTotal);
   };
-  const categoryTotal = calculateTotalRecursively(category);
+  const categoryTotal = calculateTotalRecursively(category).toNumber();
 
   const pendingCount = draftItems.length + dirtyItems.size;
 

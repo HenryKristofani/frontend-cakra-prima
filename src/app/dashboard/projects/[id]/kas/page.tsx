@@ -35,10 +35,17 @@ export default async function ProjectKasPage({
     notFound();
   }
 
-  const [initialData, initialSummary] = await Promise.all([
-    transactionService.getTransactions(filters),
-    transactionService.getSummary(filters),
-  ]);
+  let initialData, initialSummary;
+  try {
+    [initialData, initialSummary] = await Promise.all([
+      transactionService.getTransactions(filters),
+      transactionService.getSummary(filters),
+    ]);
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    console.error("Failed to fetch kas data:", error);
+    notFound();
+  }
 
   return (
     <div className="space-y-6">

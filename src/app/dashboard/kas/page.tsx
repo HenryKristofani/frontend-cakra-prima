@@ -1,5 +1,7 @@
 import { transactionService } from "@/lib/services/transactionService";
 import { TransactionContainer } from "@/components/features/transactions/TransactionContainer";
+import { isNextRedirectError } from "@/utils/error";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
@@ -18,10 +20,17 @@ export default async function KasPage({
 
   // Fetch initial data on the server
   // This runs on the server and avoids client request waterfalls
-  const [initialData, initialSummary] = await Promise.all([
-    transactionService.getTransactions(filters),
-    transactionService.getSummary(filters)
-  ]);
+  let initialData, initialSummary;
+  try {
+    [initialData, initialSummary] = await Promise.all([
+      transactionService.getTransactions(filters),
+      transactionService.getSummary(filters)
+    ]);
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    console.error("Failed to fetch general kas data:", error);
+    notFound();
+  }
 
   return (
     <div className="space-y-6">

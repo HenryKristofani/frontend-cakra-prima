@@ -1,11 +1,20 @@
 import { projectService } from "@/lib/services/projectService";
 import { ProjectContainer } from "@/components/features/projects/ProjectContainer";
+import { isNextRedirectError } from "@/utils/error";
+import { notFound } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProjectsPage() {
   // Fetch initial data on the server
-  const initialData = await projectService.getProjects();
+  let initialData;
+  try {
+    initialData = await projectService.getProjects();
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    console.error("Failed to fetch projects list:", error);
+    notFound();
+  }
 
   return (
     <div className="space-y-6">

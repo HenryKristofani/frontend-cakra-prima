@@ -43,8 +43,8 @@ export default async function ProjectKasPage({
     ]);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("KAS PAGE ERROR:", error instanceof Error ? error.message : error, error instanceof Error ? error.stack : '');
-    notFound();
+    console.error("KAS_PAGE_DEBUG:", error);
+    throw new Error(`KAS_PAGE_DEBUG: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
   }
 
   return (

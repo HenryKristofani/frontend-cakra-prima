@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutDashboard, Wallet, Settings, LogOut, Package, CreditCard, FolderKanban } from "lucide-react";
+import { LayoutDashboard, Wallet, Settings, LogOut, Package, CreditCard, FolderKanban, X } from "lucide-react";
 import { fetchApi, clearToken } from "@/lib/api";
 
-export function Sidebar({ isOpen }: { isOpen: boolean }) {
+export function Sidebar({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () => void }) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -34,11 +34,17 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
         ${isOpen ? "w-64 border-r translate-x-0" : "w-0 border-r-0 -translate-x-full md:translate-x-0 opacity-0 md:opacity-100"}
       `}
     >
-      <div className="h-16 flex items-center px-6 border-b border-border/10">
+      <div className="h-16 flex items-center justify-between px-6 border-b border-border/10">
         <div className="flex items-center gap-2 text-xl font-bold tracking-tight text-white">
           <Package className="w-6 h-6 text-brand" />
           <span>Cakra Prima</span>
         </div>
+        <button 
+          onClick={toggleSidebar} 
+          className="md:hidden text-muted-foreground hover:text-white transition-colors focus:outline-none"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
       
       <nav className="flex-1 px-4 py-6 space-y-1">

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { LayoutDashboard, Wallet, Settings, LogOut, Package, CreditCard, FolderKanban } from "lucide-react";
-import { fetchApi } from "@/lib/api";
+import { fetchApi, clearToken } from "@/lib/api";
 
 export function Sidebar({ isOpen }: { isOpen: boolean }) {
   const pathname = usePathname();
@@ -23,6 +23,7 @@ export function Sidebar({ isOpen }: { isOpen: boolean }) {
     } catch (e) {
       console.error('Logout error', e);
     } finally {
+      clearToken(); // Hapus token dari cookie & localStorage
       router.push('/login');
     }
   };

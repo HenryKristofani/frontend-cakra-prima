@@ -1,39 +1,36 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const TOKEN_COOKIE = 'auth_token';
+
 export async function middleware(request: NextRequest) {
-  // Only protect /dashboard and its sub-routes
+  // Hanya proteksi /dashboard dan sub-route-nya
   if (request.nextUrl.pathname.startsWith('/dashboard')) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-    
-    // Prepare the headers with the incoming cookies to forward to the backend
-    const headers = new Headers();
-    headers.set('Accept', 'application/json');
-    
-    // Forward all cookies
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      headers.set('cookie', cookieHeader);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
+
+    // Baca token dari cookie Next.js (ditulis oleh saveToken() saat login)
+    const token = request.cookies.get(TOKEN_COOKIE)?.value;
+
+    // Jika tidak ada token sama sekali, redirect langsung tanpa hit backend
+    if (!token) {
+      return NextResponse.redirect(new URL('/login', request.url));
     }
-    
-    // Simulate frontend request so Sanctum starts the session.
-    // DENGAN HARDCODE ENV: Mencegah manipulasi Host/URL dari pihak luar
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    headers.set('Referer', appUrl);
 
     try {
-      // Check auth status with the backend
+      // Validasi token ke backend via Authorization header (Bearer)
       const response = await fetch(`${apiUrl}/user`, {
         method: 'GET',
-        headers,
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      // If not authenticated, redirect to login page
       if (response.status === 401) {
         return NextResponse.redirect(new URL('/login', request.url));
       }
-    } catch (error) {
-      // If backend is unreachable, also redirect or handle gracefully
+    } catch {
+      // Backend tidak terjangkau
       return NextResponse.redirect(new URL('/login', request.url));
     }
   }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { fetchApi, getCsrfCookie } from '@/lib/api';
+import { fetchApi, saveToken } from '@/lib/api';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,16 +17,16 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Fetch CSRF cookie
-      await getCsrfCookie();
-
-      // 2. Perform login
-      await fetchApi('/login', {
+      // Kirim login, terima token dari backend
+      const res = await fetchApi<{ token: string }>('/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
       });
 
-      // 3. Redirect to dashboard
+      // Simpan token ke cookie (untuk SSR/middleware) dan localStorage (untuk CSR)
+      saveToken(res.token);
+
+      // Redirect ke dashboard
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Terjadi kesalahan saat login.');

@@ -43,7 +43,7 @@ export default async function ProjectKasPage({
     ]);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("Failed to fetch kas data:", error);
+    console.error("KAS PAGE ERROR:", error instanceof Error ? error.message : error, error instanceof Error ? error.stack : '');
     notFound();
   }
 

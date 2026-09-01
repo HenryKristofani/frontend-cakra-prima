@@ -2,6 +2,7 @@ import { ProgressDetailContainer } from "@/components/features/projects/progress
 import { fetchApi } from "@/lib/api";
 import { Project } from "@/types/transaction";
 import { notFound } from "next/navigation";
+import { isNextRedirectError } from "@/utils/error";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +20,9 @@ export default async function ProjectProgressPage({
   try {
     const project = await fetchApi<Project>(`/projects/${id}`);
     projectName = project.name;
-  } catch (e) {
-    console.error("Failed to fetch project for progress page", e);
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
+    console.error("Failed to fetch project for progress page", error);
   }
 
   return (

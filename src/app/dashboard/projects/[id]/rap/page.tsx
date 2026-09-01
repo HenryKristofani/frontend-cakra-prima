@@ -3,6 +3,7 @@ import { RapContainer } from '@/components/features/projects/rap/RapContainer';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { isNextRedirectError } from "@/utils/error";
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +19,8 @@ export default async function RAPPage({
   let project;
   try {
     project = await projectService.getProjectById(id);
-  } catch {
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
     notFound();
   }
 

@@ -4,6 +4,7 @@ import { TransactionContainer } from "@/components/features/transactions/Transac
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { isNextRedirectError } from "@/utils/error";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,8 @@ export default async function ProjectKasPage({
   let project;
   try {
     project = await projectService.getProjectById(id);
-  } catch {
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
     notFound();
   }
 

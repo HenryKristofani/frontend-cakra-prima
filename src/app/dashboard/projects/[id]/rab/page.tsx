@@ -4,6 +4,7 @@ import { RabContainer } from '@/components/features/projects/rab/RabContainer';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
+import { isNextRedirectError } from "@/utils/error";
 
 export const dynamic = 'force-dynamic';
 
@@ -19,19 +20,23 @@ export default async function RABPage({
   let project;
   try {
     project = await projectService.getProjectById(id);
-  } catch {
+  } catch (error) {
+    if (isNextRedirectError(error)) throw error;
     notFound();
   }
 
-  const rabSummary = await rabService.getRabSummary(id).catch(() => ({
-    total_rab_aktif: 0,
-    total_deduction: 0,
-    final_total: 0,
-    rounded_total: 0,
-    overall_progress_percentage: 0,
-    categories: [],
-    deductions: [],
-  }));
+  const rabSummary = await rabService.getRabSummary(id).catch((error) => {
+    if (isNextRedirectError(error)) throw error;
+    return {
+      total_rab_aktif: 0,
+      total_deduction: 0,
+      final_total: 0,
+      rounded_total: 0,
+      overall_progress_percentage: 0,
+      categories: [],
+      deductions: [],
+    };
+  });
 
   return (
     <div className="space-y-6">

@@ -1,6 +1,7 @@
 import { HutangContainer } from "@/components/features/hutang/HutangContainer";
 import { PaginatedDebtGroupResponse } from "@/types/hutang";
 import { fetchApi } from "@/lib/api";
+import { isNextRedirectError } from "@/utils/error";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,7 @@ async function getDebtGroups(): Promise<PaginatedDebtGroupResponse | null> {
     });
     return res;
   } catch (error) {
+    if (isNextRedirectError(error)) throw error;
     console.error(error);
     return null;
   }

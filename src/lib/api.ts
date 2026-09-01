@@ -65,7 +65,19 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
   }
 
   // Resolusi token: override (SSR) > cookie/localStorage (client)
-  const token = overrideToken ?? getToken();
+  let token = overrideToken ?? getToken();
+
+  // Jika di server-side (RSC) dan token belum ada, otomatis ambil dari next/headers
+  if (!token && typeof window === 'undefined') {
+    try {
+      const { cookies } = require('next/headers');
+      const cookieStore = cookies();
+      const resolvedCookies = cookieStore instanceof Promise ? await cookieStore : cookieStore;
+      token = resolvedCookies.get(TOKEN_COOKIE)?.value || null;
+    } catch (e) {
+      // Abaikan jika tidak berjalan di konteks Next.js App Router
+    }
+  }
 
   const isFormData = customConfig.body instanceof FormData;
 
@@ -80,15 +92,19 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
     cache: 'no-store',
     ...customConfig,
     headers: headersObj,
-    // credentials: 'include' tidak diperlukan — autentikasi via Bearer token, bukan cookie
   };
 
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    if (response.status === 401 && typeof window !== 'undefined') {
-      clearToken();
-      window.location.href = '/login';
+    if (response.status === 401) {
+      if (typeof window !== 'undefined') {
+        clearToken();
+        window.location.href = '/login';
+      } else {
+        const { redirect } = require('next/navigation');
+        redirect('/login');
+      }
     }
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.message || `API request failed: ${response.status}`);

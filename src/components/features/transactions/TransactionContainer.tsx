@@ -25,8 +25,11 @@ export function TransactionContainer({
     pagination,
     summary,
     isLoading,
+    sortBy,
+    sortDir,
     changePage,
     changePerPage,
+    changeSort,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -40,8 +43,11 @@ export function TransactionContainer({
         transactions={transactions}
         pagination={pagination}
         isLoading={isLoading}
+        sortBy={sortBy}
+        sortDir={sortDir}
         changePage={changePage}
         changePerPage={changePerPage}
+        changeSort={changeSort}
         bulkSaveTransactions={bulkSaveTransactions}
         addTransaction={addTransaction}
         updateTransaction={updateTransaction}

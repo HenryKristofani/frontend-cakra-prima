@@ -43,6 +43,14 @@ export function useTransactions(
     fetchTransactions({ ...filters, page: 1, per_page: perPage });
   }, [filters, fetchTransactions]);
 
+  const changeSort = useCallback((sortBy: 'date' | 'updated_at') => {
+    const currentSortBy = filters.sort_by ?? 'date';
+    const currentSortDir = filters.sort_dir ?? 'asc';
+    // Toggle direction if same column, otherwise default to asc
+    const newDir = (currentSortBy === sortBy && currentSortDir === 'asc') ? 'desc' : 'asc';
+    fetchTransactions({ ...filters, page: 1, sort_by: sortBy, sort_dir: newDir });
+  }, [filters, fetchTransactions]);
+
   const addTransaction = useCallback(async (payload: Omit<Transaction, 'id'>) => {
     setIsLoading(true);
     setError(null);
@@ -126,11 +134,14 @@ export function useTransactions(
       total: data.total,
       per_page: data.per_page,
     },
+    sortBy: filters.sort_by ?? 'date',
+    sortDir: filters.sort_dir ?? 'asc',
     summary,
     isLoading,
     error,
     changePage,
     changePerPage,
+    changeSort,
     addTransaction,
     updateTransaction,
     deleteTransaction,

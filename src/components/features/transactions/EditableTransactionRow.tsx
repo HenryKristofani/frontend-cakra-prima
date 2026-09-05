@@ -212,6 +212,21 @@ export function EditableTransactionRow({
           )}
         </td>
       )}
+      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+        {trx.updated_at
+          ? (() => {
+              const diff = Date.now() - new Date(trx.updated_at).getTime();
+              const mins = Math.floor(diff / 60000);
+              const hours = Math.floor(diff / 3600000);
+              const days = Math.floor(diff / 86400000);
+              if (mins < 1) return 'Baru saja';
+              if (mins < 60) return `${mins} menit lalu`;
+              if (hours < 24) return `${hours} jam lalu`;
+              if (days < 7) return `${days} hari lalu`;
+              return new Date(trx.updated_at).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+            })()
+          : '-'}
+      </td>
       <td className="px-4 py-3 text-right">
         <div className="flex items-center justify-end gap-1">
           {rowError && (

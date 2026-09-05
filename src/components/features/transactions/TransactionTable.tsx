@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Loader2, FileSpreadsheet, Plus, Save } from "lucide-react";
+import { Search, Loader2, FileSpreadsheet, Plus, Save, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { Transaction, Project, Account } from "@/types/transaction";
@@ -20,8 +20,11 @@ interface TransactionTableProps {
     per_page?: number;
   };
   isLoading: boolean;
+  sortBy?: 'date' | 'updated_at';
+  sortDir?: 'asc' | 'desc';
   changePage: (page: number) => void;
   changePerPage?: (perPage: number) => void;
+  changeSort?: (col: 'date' | 'updated_at') => void;
   bulkSaveTransactions?: (
     newItems: Array<Omit<Transaction, "id">>,
     dirtyItems: Array<Partial<Transaction> & { id: number }>,
@@ -38,8 +41,11 @@ export function TransactionTable({
   transactions,
   pagination,
   isLoading,
+  sortBy = 'date',
+  sortDir = 'asc',
   changePage,
   changePerPage,
+  changeSort,
   bulkSaveTransactions,
   addTransaction,
   updateTransaction,
@@ -282,8 +288,18 @@ export function TransactionTable({
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b border-border">
             <tr>
-              <th className="px-4 py-3 font-medium">ID</th>
-              <th className="px-4 py-3 font-medium">Tanggal</th>
+              <th className="px-4 py-3 font-medium">#</th>
+              <th className="px-4 py-3 font-medium">
+                <button
+                  onClick={() => changeSort?.('date')}
+                  className="flex items-center gap-1 hover:text-foreground transition-colors group"
+                >
+                  Tanggal
+                  {sortBy === 'date'
+                    ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3 text-brand" /> : <ArrowDown className="w-3 h-3 text-brand" />)
+                    : <ArrowUpDown className="w-3 h-3 opacity-40 group-hover:opacity-100" />}
+                </button>
+              </th>
               <th className="px-4 py-3 font-medium">Project</th>
               {!(lockedProjectId && projects.find(p => p.id === Number(lockedProjectId))?.is_isolated_cash) && (
                 <th className="px-4 py-3 font-medium">Akun</th>
@@ -296,6 +312,17 @@ export function TransactionTable({
               {lockedProjectId && (
                 <th className="px-4 py-3 font-medium">Item RAP</th>
               )}
+              <th className="px-4 py-3 font-medium">
+                <button
+                  onClick={() => changeSort?.('updated_at')}
+                  className="flex items-center gap-1 hover:text-foreground transition-colors group whitespace-nowrap"
+                >
+                  Terakhir Diedit
+                  {sortBy === 'updated_at'
+                    ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3 text-brand" /> : <ArrowDown className="w-3 h-3 text-brand" />)
+                    : <ArrowUpDown className="w-3 h-3 opacity-40 group-hover:opacity-100" />}
+                </button>
+              </th>
               <th className="px-4 py-3 font-medium text-right">Aksi</th>
             </tr>
           </thead>

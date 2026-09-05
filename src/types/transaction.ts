@@ -66,4 +66,6 @@ export interface TransactionFilters {
   year?: string | number;
   project_id?: number | string;
   per_page?: number;
+  sort_by?: 'date' | 'updated_at';
+  sort_dir?: 'asc' | 'desc';
 }

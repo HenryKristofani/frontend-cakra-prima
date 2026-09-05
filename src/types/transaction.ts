@@ -65,4 +65,5 @@ export interface TransactionFilters {
   month?: string | number;
   year?: string | number;
   project_id?: number | string;
+  per_page?: number;
 }

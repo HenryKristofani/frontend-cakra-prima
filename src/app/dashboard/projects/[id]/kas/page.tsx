@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { isNextRedirectError } from "@/utils/error";
+import type { PaginatedResponse, Transaction, TransactionSummary } from "@/types/transaction";
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +36,8 @@ export default async function ProjectKasPage({
     notFound();
   }
 
-  let initialData, initialSummary;
+  let initialData: PaginatedResponse<Transaction>;
+  let initialSummary: TransactionSummary;
   try {
     [initialData, initialSummary] = await Promise.all([
       transactionService.getTransactions(filters),
@@ -43,8 +45,8 @@ export default async function ProjectKasPage({
     ]);
   } catch (error) {
     if (isNextRedirectError(error)) throw error;
-    console.error("KAS_PAGE_DEBUG:", error);
-    throw new Error(`KAS_PAGE_DEBUG: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
+    console.error("KAS PAGE ERROR:", error instanceof Error ? error.message : error);
+    notFound();
   }
 
   return (

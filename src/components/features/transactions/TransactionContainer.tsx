@@ -26,6 +26,7 @@ export function TransactionContainer({
     summary,
     isLoading,
     changePage,
+    changePerPage,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -40,6 +41,7 @@ export function TransactionContainer({
         pagination={pagination}
         isLoading={isLoading}
         changePage={changePage}
+        changePerPage={changePerPage}
         bulkSaveTransactions={bulkSaveTransactions}
         addTransaction={addTransaction}
         updateTransaction={updateTransaction}

@@ -17,9 +17,11 @@ interface TransactionTableProps {
     current_page: number;
     last_page: number;
     total: number;
+    per_page?: number;
   };
   isLoading: boolean;
   changePage: (page: number) => void;
+  changePerPage?: (perPage: number) => void;
   bulkSaveTransactions?: (
     newItems: Array<Omit<Transaction, "id">>,
     dirtyItems: Array<Partial<Transaction> & { id: number }>,
@@ -37,6 +39,7 @@ export function TransactionTable({
   pagination,
   isLoading,
   changePage,
+  changePerPage,
   bulkSaveTransactions,
   addTransaction,
   updateTransaction,
@@ -312,10 +315,14 @@ export function TransactionTable({
                 rowError={rowErrors[draft.id]}
               />
             ))}
-            {transactions.map((trx) => (
+            {transactions.map((trx, index) => {
+              const rowNumber = (pagination.current_page - 1) * (pagination.per_page || 10) + index + 1;
+              return (
               <EditableTransactionRow
                 key={trx.id}
                 trx={trx}
+                displayId={rowNumber}
+                isDirty={!!dirtyUpdates[trx.id]}
                 onDirtyChange={handleDirtyChange}
                 onDelete={deleteTransaction}
                 projects={projects}
@@ -324,7 +331,7 @@ export function TransactionTable({
                 rapItems={rapItems}
                 rowError={rowErrors[`existing-${trx.id}`]}
               />
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
@@ -371,7 +378,22 @@ export function TransactionTable({
       </div>
       
       {!hasUnsavedChanges && (
-        <div className="p-4 border-t border-border flex justify-end items-center text-sm text-muted-foreground bg-muted/20">
+        <div className="p-4 border-t border-border flex justify-between items-center text-sm text-muted-foreground bg-muted/20 flex-wrap gap-4">
+          <div className="flex items-center gap-2">
+            <span>Tampilkan</span>
+            <select
+              value={pagination.per_page || 10}
+              onChange={(e) => changePerPage?.(Number(e.target.value))}
+              className="bg-background border border-border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50 text-foreground"
+            >
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+            </select>
+            <span>baris per halaman</span>
+          </div>
           <div className="flex gap-1">
             <button
               onClick={() => changePage(Math.max(1, pagination.current_page - 1))}

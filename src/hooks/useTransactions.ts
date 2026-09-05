@@ -39,6 +39,10 @@ export function useTransactions(
     fetchTransactions({ ...filters, page });
   }, [filters, fetchTransactions]);
 
+  const changePerPage = useCallback((perPage: number) => {
+    fetchTransactions({ ...filters, page: 1, per_page: perPage });
+  }, [filters, fetchTransactions]);
+
   const addTransaction = useCallback(async (payload: Omit<Transaction, 'id'>) => {
     setIsLoading(true);
     setError(null);
@@ -120,11 +124,13 @@ export function useTransactions(
       current_page: data.current_page,
       last_page: data.last_page,
       total: data.total,
+      per_page: data.per_page,
     },
     summary,
     isLoading,
     error,
     changePage,
+    changePerPage,
     addTransaction,
     updateTransaction,
     deleteTransaction,

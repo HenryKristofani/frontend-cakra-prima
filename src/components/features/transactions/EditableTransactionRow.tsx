@@ -13,6 +13,8 @@ interface EditableTransactionRowProps {
   lockedProjectId?: number | string;
   rapItems?: Array<{ id: number; description: string }>;
   rowError?: string | null;
+  displayId?: number;
+  isDirty?: boolean;
 }
 
 export function EditableTransactionRow({
@@ -24,6 +26,8 @@ export function EditableTransactionRow({
   lockedProjectId,
   rapItems = [],
   rowError,
+  displayId,
+  isDirty = false,
 }: EditableTransactionRowProps) {
   const [date, setDate] = useState(trx.date?.split("T")[0] || "");
   const [projectId, setProjectId] = useState<string>(trx.project_id ? String(trx.project_id) : "");
@@ -36,7 +40,6 @@ export function EditableTransactionRow({
   const initialExpense = trx.expense && Number(trx.expense) > 0 ? Number(trx.expense).toString() : "";
   const [income, setIncome] = useState(initialIncome);
   const [expense, setExpense] = useState(initialExpense);
-  const [isDirty, setIsDirty] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [rapItemId, setRapItemId] = useState<string>(trx.rap_item_id ? String(trx.rap_item_id) : "");
 
@@ -78,7 +81,6 @@ export function EditableTransactionRow({
   }, [date, projectId, accountId, company, description, payment, income, expense, rapItemId, trx.id, trx.project_id]);
 
   const markDirty = useCallback((overrides: Record<string, any> = {}) => {
-    setIsDirty(true);
     onDirtyChange(trx.id, buildDirtyPayload(overrides));
   }, [buildDirtyPayload, trx.id, onDirtyChange]);
 
@@ -107,7 +109,7 @@ export function EditableTransactionRow({
     <tr className={`text-foreground ${rowBg}`}>
       <td className="px-4 py-3 font-medium text-xs text-muted-foreground">
         <div className="flex flex-col gap-0.5">
-          <span>{trx.id}</span>
+          <span>{displayId ?? trx.id}</span>
           {isDirty && !rowError && (
             <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 leading-none">DRAFT</span>
           )}

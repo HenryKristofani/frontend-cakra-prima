@@ -27,7 +27,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
 
   // Settings form state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [pajakValue, setPajakValue] = useState('');
+  const [potonganValue, setPotonganValue] = useState('');
   const [isSavingSetting, setIsSavingSetting] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSyncingNew, setIsSyncingNew] = useState(false);
@@ -46,10 +46,10 @@ export function RapContainer({ projectId }: RapContainerProps) {
       setSetting(set);
       setSyncStatuses(syncStats);
       setUnsyncedNewCount(unsyncedRes.count);
-      setPajakValue(
+      setPotonganValue(
         set.project_setting 
-          ? set.project_setting.pajak_percentage.toString() 
-          : set.effective_pajak_percentage.toString()
+          ? set.project_setting.potongan_percentage.toString() 
+          : set.effective_potongan_percentage.toString()
       );
     } catch (err: any) {
       setError(err?.message || 'Gagal memuat data RAP');
@@ -84,12 +84,12 @@ export function RapContainer({ projectId }: RapContainerProps) {
     });
   }, []);
 
-  const handleSavePajak = async () => {
+  const handleSavePotongan = async () => {
     setIsSavingSetting(true);
     try {
-      const val = parseFloat(pajakValue);
+      const val = parseFloat(potonganValue);
       if (isNaN(val) || val < 0 || val > 100) {
-        throw new Error('Nilai pajak harus antara 0 dan 100');
+        throw new Error('Nilai potongan harus antara 0 dan 100');
       }
       await rapService.updateProjectSetting(projectId, val);
       await fetchData(); // refresh everything so all items recalculate
@@ -182,7 +182,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
     );
   }
 
-  const effectivePajak = setting?.effective_pajak_percentage ?? 0;
+  const effectivePotongan = setting?.effective_potongan_percentage ?? 0;
   const isCustomSetting = !!setting?.project_setting;
   const { totalRap, totalRab } = calculateTotals();
 
@@ -238,10 +238,10 @@ export function RapContainer({ projectId }: RapContainerProps) {
 
             <div className="flex items-center gap-3 bg-muted/50 px-4 py-2 rounded-lg border border-border/50">
               <div className="text-right">
-                <p className="text-xs text-muted-foreground font-medium mb-0.5">Pajak & Biaya Admin</p>
+                <p className="text-xs text-muted-foreground font-medium mb-0.5">Potongan Harga</p>
                 <div className="flex items-center gap-1.5 justify-end">
                   <span className="text-sm font-bold text-orange-600 dark:text-orange-400">
-                    {effectivePajak.toFixed(2)}%
+                    {effectivePotongan.toFixed(2)}%
                   </span>
                   {isCustomSetting ? (
                     <span className="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Khusus</span>
@@ -254,7 +254,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
               <button
                 onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                 className="p-2 hover:bg-background rounded-md text-muted-foreground hover:text-foreground transition-colors"
-                title="Atur Pajak"
+                title="Atur Potongan Harga"
               >
                 <Settings2 className="w-5 h-5" />
               </button>
@@ -268,7 +268,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
             <div className="max-w-md">
               <h3 className="text-sm font-medium mb-3 flex items-center gap-2">
                 <Settings2 className="w-4 h-4 text-muted-foreground" />
-                Pengaturan Pajak & Biaya Admin
+                Pengaturan Potongan Harga
               </h3>
               <div className="flex gap-2">
                 <div className="relative flex-1">
@@ -277,14 +277,14 @@ export function RapContainer({ projectId }: RapContainerProps) {
                     step="0.01"
                     min="0"
                     max="100"
-                    value={pajakValue}
-                    onChange={(e) => setPajakValue(e.target.value)}
+                    value={potonganValue}
+                    onChange={(e) => setPotonganValue(e.target.value)}
                     className="w-full bg-background border border-border rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand/50"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm font-medium">%</span>
                 </div>
                 <button
-                  onClick={handleSavePajak}
+                  onClick={handleSavePotongan}
                   disabled={isSavingSetting}
                   className="px-4 py-2 bg-brand text-primary-foreground rounded-lg text-sm font-medium hover:bg-brand-600 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
@@ -293,7 +293,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
                 </button>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                Jika diatur, nilai ini akan menimpa pengaturan pajak global untuk project ini.
+                Jika diatur, nilai ini akan menimpa pengaturan potongan global untuk project ini.
               </p>
             </div>
           </div>
@@ -373,7 +373,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
                   <th className="px-3 py-2 text-center text-xs font-semibold w-20 border-r border-border/50">Sat</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-28 border-r border-border/50">Harga RAB</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-28 border-r border-border/50">Harga RAP</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold w-28 border-r border-border/50 text-orange-700 dark:text-orange-400 bg-orange-50/50 dark:bg-orange-950/20">Hrg Efektif ({effectivePajak.toFixed(2)} %)</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold w-28 border-r border-border/50 text-orange-700 dark:text-orange-400 bg-orange-50/50 dark:bg-orange-950/20">Hrg Efektif ({effectivePotongan.toFixed(2)} %)</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-32 border-r border-border/50">Jumlah RAB</th>
                   <th className="px-3 py-2 text-right text-xs font-semibold w-32 border-r border-border/50">Jumlah RAP</th>
                 </tr>
@@ -383,7 +383,7 @@ export function RapContainer({ projectId }: RapContainerProps) {
                   <RapCategorySection
                     key={category.id}
                     category={category}
-                    pajakPct={effectivePajak}
+                    potonganPct={effectivePotongan}
                     syncStatuses={syncStatuses}
                     onRefresh={fetchData}
                     projectId={projectId}

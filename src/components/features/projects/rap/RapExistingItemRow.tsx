@@ -28,7 +28,7 @@ interface RapExistingItemRowProps {
   item: RapItem;
   dirtyState?: RapDirtyItemState;
   idx: number;
-  pajakPct: number;
+  potonganPct: number;
   syncStatus?: RapSyncStatus;
   onQuickChange: (item: RapItem, field: keyof RapDirtyItemState, value: string) => void;
   onRevert: (itemId: number) => void;
@@ -46,7 +46,7 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   item,
   dirtyState,
   idx,
-  pajakPct,
+  potonganPct,
   syncStatus,
   onQuickChange,
   onRevert,
@@ -85,11 +85,11 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
   try {
     const decVol = new Decimal(volume || '0');
     const decPrice = new Decimal(unitPrice || '0');
-    // For RAB-sourced items, unit_price already has pajak deducted (RAP = RAB * (1 - pajak%)).
-    // Applying pajak again here would cause double-deduction. For manual items, apply normally.
+    // For RAB-sourced items, unit_price already has potongan deducted (RAP = RAB * (1 - potongan%)).
+    // Applying potongan again here would cause double-deduction. For manual items, apply normally.
     const decEffective = item.source_rab_item_id
       ? decPrice
-      : decPrice.times(new Decimal(1).minus(new Decimal(pajakPct).dividedBy(100)));
+      : decPrice.times(new Decimal(1).minus(new Decimal(potonganPct).dividedBy(100)));
     effectiveUnitPriceLive = decEffective.toNumber();
     totalLive = decVol.times(decEffective).toNumber();
   } catch { /* invalid input, leave 0 */ }
@@ -268,9 +268,9 @@ export const RapExistingItemRow = React.memo(function RapExistingItemRow({
         )}
       </td>
 
-      {/* Harga Efektif (preview setelah pajak) */}
-      <td className={`px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums ${pajakPct > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
-        {pajakPct > 0
+      {/* Harga Efektif (preview setelah potongan) */}
+      <td className={`px-3 py-1.5 border-r border-border/50 text-right text-xs align-top pt-2.5 tabular-nums ${potonganPct > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+        {potonganPct > 0
           ? formatCurrency(effectiveUnitPriceLive).replace('Rp', '').trim()
           : '-'}
       </td>

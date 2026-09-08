@@ -80,7 +80,7 @@ export function LabaRugiContainer({ projectId }: LabaRugiContainerProps) {
           <p className="text-sm font-medium text-muted-foreground mb-1">Total Rencana Biaya (RAP)</p>
           <p className="text-2xl font-bold">{formatCurrency(summary.total_rencana)}</p>
           <p className="text-xs text-muted-foreground mt-2">
-            Setelah pajak & biaya admin {summary.pajak_percentage}%
+            Setelah potongan harga {summary.potongan_percentage}%
           </p>
         </div>
 

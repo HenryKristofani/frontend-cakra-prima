@@ -80,22 +80,22 @@ export const rapService = {
     });
   },
 
-  async updateProjectSetting(projectId: string | number, pajakPercentage: number): Promise<any> {
+  async updateProjectSetting(projectId: string | number, potonganPercentage: number): Promise<any> {
     const res = await fetchApi(`/projects/${projectId}/rap-setting`, {
       method: 'PUT',
-      body: JSON.stringify({ pajak_percentage: pajakPercentage }),
+      body: JSON.stringify({ potongan_percentage: potonganPercentage }),
     });
     return res;
   },
 
-  async getGlobalSetting(): Promise<{ pajak_percentage: number }> {
+  async getGlobalSetting(): Promise<{ potongan_percentage: number }> {
     return fetchApi('/rap-setting/global');
   },
 
-  async updateGlobalSetting(pajakPercentage: number): Promise<any> {
+  async updateGlobalSetting(potonganPercentage: number): Promise<any> {
     const res = await fetchApi('/rap-setting/global', {
       method: 'PUT',
-      body: JSON.stringify({ pajak_percentage: pajakPercentage }),
+      body: JSON.stringify({ potongan_percentage: potonganPercentage }),
     });
     return res;
   },

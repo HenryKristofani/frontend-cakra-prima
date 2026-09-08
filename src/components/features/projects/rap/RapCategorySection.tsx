@@ -13,7 +13,7 @@ import { RapExistingItemRow, RapDirtyItemState, RapSyncStatus } from './RapExist
 interface RapCategorySectionProps {
   category: RapCategory;
   depth?: number;
-  pajakPct: number;
+  potonganPct: number;
   syncStatuses?: Record<string, RapSyncStatus>;
   onRefresh: () => Promise<void>;
   projectId: number | string;
@@ -38,7 +38,7 @@ function newDraft(): RapDraftItem {
 export function RapCategorySection({
   category,
   depth = 0,
-  pajakPct,
+  potonganPct,
   syncStatuses = {},
   onRefresh,
   projectId,
@@ -428,7 +428,7 @@ export function RapCategorySection({
             item={item}
             dirtyState={dirtyState}
             idx={idx}
-            pajakPct={pajakPct}
+            potonganPct={potonganPct}
             syncStatus={syncStatus}
             onQuickChange={handleDirtyChange}
             onRevert={handleRevertDirty}
@@ -444,7 +444,7 @@ export function RapCategorySection({
             key={draft._key}
             draft={draft}
             idx={idx}
-            pajakPct={pajakPct}
+            potonganPct={potonganPct}
             onChange={handleDraftChange}
             onRemove={handleRemoveDraft}
           />
@@ -471,7 +471,7 @@ export function RapCategorySection({
           key={child.id}
           category={child}
           depth={depth + 1}
-          pajakPct={pajakPct}
+          potonganPct={potonganPct}
           syncStatuses={syncStatuses}
           onRefresh={onRefresh}
           projectId={projectId}

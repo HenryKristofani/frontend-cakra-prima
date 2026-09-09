@@ -1,8 +1,9 @@
 "use client";
 
 import { Loader2, Trash2 } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 import { Transaction, Project, Account } from "@/types/transaction";
 
 interface NewTransactionRowProps {
@@ -150,20 +151,24 @@ export function NewTransactionRow({
         </select>
       </td>
       <td className="px-4 py-3">
-        <input
-          type="number"
+        <CurrencyInput
           value={income}
-          onChange={(e) => { setIncome(e.target.value); emitChange({ income: e.target.value }); }}
+          onChange={(val) => {
+            setIncome(val);
+            emitChange({ income: val });
+          }}
           disabled={expense.length > 0}
           placeholder="Pemasukan..."
           className="w-full min-w-[120px] bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-emerald-700 dark:text-emerald-400 placeholder:text-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </td>
       <td className="px-4 py-3">
-        <input
-          type="number"
+        <CurrencyInput
           value={expense}
-          onChange={(e) => { setExpense(e.target.value); emitChange({ expense: e.target.value }); }}
+          onChange={(val) => {
+            setExpense(val);
+            emitChange({ expense: val });
+          }}
           disabled={income.length > 0}
           placeholder="Pengeluaran..."
           className="w-full min-w-[120px] bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-rose-700 dark:text-rose-400 placeholder:text-rose-600/40 disabled:opacity-50 disabled:cursor-not-allowed"

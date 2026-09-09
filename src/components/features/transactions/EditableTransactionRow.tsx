@@ -3,6 +3,7 @@
 import { Loader2, Trash2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Transaction, Project, Account } from "@/types/transaction";
+import { CurrencyInput } from "@/components/ui/CurrencyInput";
 
 interface EditableTransactionRowProps {
   trx: Transaction;
@@ -35,13 +36,15 @@ export function EditableTransactionRow({
   const [company, setCompany] = useState(trx.company || "");
   const [description, setDescription] = useState(trx.description || "");
   const [payment, setPayment] = useState<"cash" | "rek">(trx.payment_method || "cash");
-
-  const initialIncome = trx.income && Number(trx.income) > 0 ? Number(trx.income).toString() : "";
-  const initialExpense = trx.expense && Number(trx.expense) > 0 ? Number(trx.expense).toString() : "";
-  const [income, setIncome] = useState(initialIncome);
-  const [expense, setExpense] = useState(initialExpense);
+  const [income, setIncome] = useState(trx.income && Number(trx.income) > 0 ? String(Number(trx.income)) : "");
+  const [expense, setExpense] = useState(trx.expense && Number(trx.expense) > 0 ? String(Number(trx.expense)) : "");
   const [isDeleting, setIsDeleting] = useState(false);
   const [rapItemId, setRapItemId] = useState<string>(trx.rap_item_id ? String(trx.rap_item_id) : "");
+
+  useEffect(() => {
+    setIncome(trx.income && Number(trx.income) > 0 ? String(Number(trx.income)) : "");
+    setExpense(trx.expense && Number(trx.expense) > 0 ? String(Number(trx.expense)) : "");
+  }, [trx.id, trx.income, trx.expense]);
 
   useEffect(() => {
     if (projects.length > 0 && trx.project_id) {
@@ -172,20 +175,24 @@ export function EditableTransactionRow({
         </select>
       </td>
       <td className="px-4 py-3">
-        <input
-          type="number"
+        <CurrencyInput
           value={income}
-          onChange={(e) => { setIncome(e.target.value); markDirty({ income: e.target.value }); }}
+          onChange={(val) => {
+            setIncome(val);
+            markDirty({ income: val });
+          }}
           disabled={expense.length > 0}
           placeholder="Pemasukan..."
           className="w-full min-w-[120px] bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-emerald-700 dark:text-emerald-400 placeholder:text-emerald-600/40 disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </td>
       <td className="px-4 py-3">
-        <input
-          type="number"
+        <CurrencyInput
           value={expense}
-          onChange={(e) => { setExpense(e.target.value); markDirty({ expense: e.target.value }); }}
+          onChange={(val) => {
+            setExpense(val);
+            markDirty({ expense: val });
+          }}
           disabled={income.length > 0}
           placeholder="Pengeluaran..."
           className="w-full min-w-[120px] bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500/50 text-rose-700 dark:text-rose-400 placeholder:text-rose-600/40 disabled:opacity-50 disabled:cursor-not-allowed"

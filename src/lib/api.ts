@@ -97,10 +97,12 @@ export async function fetchApi<T>(endpoint: string, options: FetchOptions = {}):
   const response = await fetch(url, config);
 
   if (!response.ok) {
-    if (response.status === 401) {
+    if (response.status === 401 && endpoint !== '/login') {
       if (typeof window !== 'undefined') {
         clearToken();
-        window.location.href = '/login';
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login';
+        }
       } else {
         const { redirect } = require('next/navigation');
         redirect('/login');

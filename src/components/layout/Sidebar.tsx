@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { LayoutDashboard, Wallet, Settings, LogOut, Package, CreditCard, FolderKanban, X } from "lucide-react";
+import { LayoutDashboard, Wallet, Settings, LogOut, Package, CreditCard, FolderKanban, X, Warehouse, Scale } from "lucide-react";
 import { fetchApi, clearToken } from "@/lib/api";
 
 export function Sidebar({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () => void }) {
@@ -14,6 +14,9 @@ export function Sidebar({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSide
     { name: "Kas Buku Besar", href: "/dashboard/kas", icon: Wallet },
     { name: "Hutang", href: "/dashboard/hutang", icon: CreditCard },
     { name: "Projects", href: "/dashboard/projects", icon: FolderKanban },
+    { name: "Persediaan Material", href: "/dashboard/inventory", icon: Warehouse },
+    { name: "Master Barang", href: "/dashboard/inventory/items", icon: Package },
+    { name: "Master Satuan", href: "/dashboard/inventory/units", icon: Scale },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ];
 

@@ -12,7 +12,7 @@ export function UsagePendingList() {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [activeUsage, setActiveUsage] = useState<{ id: number; total: number } | null>(null);
+  const [activeUsage, setActiveUsage] = useState<{ id: number; total: number; isIsolated: boolean } | null>(null);
 
   const fetchPending = useCallback(async () => {
     setIsLoading(true);
@@ -98,10 +98,10 @@ export function UsagePendingList() {
                       </div>
                       <div>
                         <p className="font-medium text-primary">
-                          {usage.stock_transfer?.reference_number || `USAGE-${usage.id}`}
+                          {usage.stock_transfer_line?.stock_transfer?.reference_number || `USAGE-${usage.id}`}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {new Date(usage.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          {new Date(usage.used_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                         </p>
                       </div>
                     </div>
@@ -114,12 +114,16 @@ export function UsagePendingList() {
                   </td>
                   <td className="px-4 py-4 text-right">
                     <span className="font-bold text-amber-600 dark:text-amber-500">
-                      Rp {Number(usage.total_value).toLocaleString('id-ID')}
+                      Rp {Number(usage.stock_transfer_line?.total_price || 0).toLocaleString('id-ID')}
                     </span>
                   </td>
                   <td className="px-4 py-4 text-center">
                     <button 
-                      onClick={() => setActiveUsage({ id: usage.id, total: Number(usage.total_value) })}
+                      onClick={() => setActiveUsage({
+                        id: usage.id,
+                        total: Number(usage.stock_transfer_line?.total_price || 0),
+                        isIsolated: usage.warehouse?.project?.is_isolated_cash ?? false
+                      })}
                       className="inline-flex items-center justify-center gap-2 px-3 py-1.5 bg-background border border-border hover:bg-amber-50 hover:border-amber-200 hover:text-amber-700 dark:hover:bg-amber-900/30 dark:hover:border-amber-800 dark:hover:text-amber-400 rounded-md text-xs font-medium transition-colors"
                     >
                       <DollarSign className="w-3.5 h-3.5" />
@@ -136,7 +140,8 @@ export function UsagePendingList() {
       {activeUsage && (
         <PostToKasModal 
           usageId={activeUsage.id} 
-          totalValue={activeUsage.total} 
+          totalValue={activeUsage.total}
+          isIsolated={activeUsage.isIsolated}
           onClose={() => setActiveUsage(null)} 
           onSuccess={handleKasSuccess}
         />

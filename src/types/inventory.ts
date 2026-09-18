@@ -84,14 +84,36 @@ export interface StockTransferRequest {
 
 export interface StockUsage {
   id: number;
-  stock_transfer_id: number;
+  stock_transfer_line_id: number;
   warehouse_id: number;
-  project_id: number;
-  total_value: number;
+  item_id: number;
+  quantity: string | number;
+  usage_note: string | null;
   posted_to_kas: boolean;
-  stock_transfer?: any; // Boleh dibiarkan any atau dispesifikkan jika butuh
-  warehouse?: Warehouse;
-  created_at: string;
+  kas_transaction_id: number | null;
+  used_at: string;
+  item?: any;
+  warehouse?: Warehouse & {
+    project?: {
+      id: number;
+      name: string;
+      is_isolated_cash: boolean;
+    };
+  };
+  stock_transfer_line?: {
+    id: number;
+    stock_transfer_id: number;
+    item_id: number;
+    quantity: string | number;
+    unit_price: string | number;
+    total_price: string | number;
+    stock_transfer?: {
+      id: number;
+      reference_number: string;
+      type: string;
+      created_at: string;
+    }
+  };
 }
 
 export interface Account {
@@ -99,7 +121,7 @@ export interface Account {
   name: string;
   code?: string;
   type?: string;
-  balance?: number;
+  current_balance?: number;
 }
 
 export interface StockMove {

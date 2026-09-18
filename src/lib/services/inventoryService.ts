@@ -119,7 +119,7 @@ export const inventoryService = {
     return data.data;
   },
 
-  postToKas: async (usageId: number, payload: { payment_method: string; account_id: number; date: string }): Promise<void> => {
+  postToKas: async (usageId: number, payload: { payment_method: string; date: string; account_id?: number }): Promise<void> => {
     await fetchApi(`/inventory/stock-usages/${usageId}/post-to-kas`, {
       method: 'POST',
       body: JSON.stringify(payload),
@@ -127,8 +127,8 @@ export const inventoryService = {
   },
 
   getAccounts: async (): Promise<any[]> => {
-    const data = await fetchApi<ApiResponse<any[]>>('/accounts');
-    return data.data;
+    const data = await fetchApi<any[]>('/accounts');
+    return data; // Backend returns array directly, not wrapped in {data: ...}
   },
 
   getProjects: async (): Promise<{ id: number; name: string }[]> => {

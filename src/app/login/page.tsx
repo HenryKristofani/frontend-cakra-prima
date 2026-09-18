@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import logoImg from '@/app/icon.png';
 import { fetchApi, saveToken } from '@/lib/api';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, X } from 'lucide-react';
 
@@ -75,19 +77,12 @@ export default function LoginPage() {
       {/* Main Container */}
       <div className="w-full max-w-[390px] relative z-10 pt-16">
         {/* Overlapping Circular Avatar Badge */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-[#071f37] border-4 border-[#1b6b7a]/80 shadow-[0_12px_28px_rgba(0,0,0,0.35)] flex items-center justify-center z-20 transition-transform hover:scale-[1.02]">
-          <svg
-            className="w-14 h-14 sm:w-16 sm:h-16 text-white"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.35"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="12" cy="7.5" r="4.5" />
-            <path d="M4 20c0-4.2 3.6-7.5 8-7.5s8 3.3 8 7.5" />
-          </svg>
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-white border-4 border-white shadow-[0_12px_28px_rgba(0,0,0,0.35)] flex items-center justify-center z-20 transition-transform hover:scale-[1.02] overflow-hidden">
+          <Image
+            src={logoImg}
+            alt="Logo Cakra Prima"
+            className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-lg"
+          />
         </div>
 
         {/* Frosted Teal Card */}

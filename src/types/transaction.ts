@@ -23,6 +23,7 @@ export interface Transaction {
   project_id?: number | null;
   user_id?: number | null;
   rap_item_id?: number | null;
+  fund_movement_id?: number | null;
   company?: string | null;
   description: string;
   payment_method: 'cash' | 'rek';

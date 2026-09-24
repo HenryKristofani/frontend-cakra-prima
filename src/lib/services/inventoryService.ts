@@ -1,4 +1,5 @@
 import { fetchApi } from '../api';
+import { Project } from '@/types/transaction';
 import { ApiResponse, StockBalanceAggregate, StockBalanceDetail, Warehouse, InventoryItem, Unit } from '@/types/inventory';
 
 export const inventoryService = {
@@ -131,8 +132,8 @@ export const inventoryService = {
     return data; // Backend returns array directly, not wrapped in {data: ...}
   },
 
-  getProjects: async (): Promise<{ id: number; name: string }[]> => {
-    const data = await fetchApi<any[]>('/projects?status=aktif'); // From ProjectController, it returns direct array
+  getProjects: async (): Promise<Project[]> => {
+    const data = await fetchApi<Project[]>('/projects?status=aktif'); // From ProjectController, it returns direct array
     return data;
   },
 

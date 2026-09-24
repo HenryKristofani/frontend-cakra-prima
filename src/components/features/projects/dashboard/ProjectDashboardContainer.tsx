@@ -4,6 +4,7 @@ import { Project, TransactionSummary } from "@/types/transaction";
 import { ProjectSummaryCards } from "./ProjectSummaryCards";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { ProjectFundSources } from "./ProjectFundSources";
 
 interface ProjectDashboardContainerProps {
   project: Project;
@@ -46,6 +47,8 @@ export function ProjectDashboardContainer({ project, initialSummary, rabSummary,
         rabSummary={rabSummary}
         labaRugi={labaRugi}
       />
+
+      <ProjectFundSources projectId={project.id} />
 
       {/* Additional sections for project specific features can go here later */}
     </div>

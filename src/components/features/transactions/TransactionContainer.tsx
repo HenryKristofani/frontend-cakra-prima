@@ -38,7 +38,7 @@ export function TransactionContainer({
 
   return (
     <>
-      <TransactionSummaryCards summary={summary} />
+      <TransactionSummaryCards summary={summary} projectId={lockedProjectId} />
       <TransactionTable 
         transactions={transactions}
         pagination={pagination}

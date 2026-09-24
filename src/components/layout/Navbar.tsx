@@ -3,6 +3,7 @@
 import { Bell, Search, UserCircle, Menu, Calendar } from "lucide-react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
+import { fetchApi } from "@/lib/api";
 
 export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
   const router = useRouter();
@@ -30,6 +31,14 @@ export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
         day: "numeric",
       })
     );
+  }, []);
+
+  const [user, setUser] = useState<{name: string, email: string} | null>(null);
+
+  useEffect(() => {
+    fetchApi<{name: string, email: string}>('/user')
+      .then(data => setUser(data))
+      .catch(err => console.error("Failed to load user:", err));
   }, []);
 
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -149,9 +158,18 @@ export function Navbar({ toggleSidebar }: { toggleSidebar: () => void }) {
           <div className="w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center text-brand">
             <UserCircle className="w-6 h-6" />
           </div>
-          <div className="hidden md:block text-sm text-left">
-            <p className="font-medium text-foreground leading-none">Admin User</p>
-            <p className="text-xs text-muted-foreground mt-1">admin@cakra.com</p>
+          <div className="hidden md:block text-sm text-left min-w-[100px]">
+            {user ? (
+              <>
+                <p className="font-medium text-foreground leading-none">{user.name}</p>
+                <p className="text-xs text-muted-foreground mt-1">{user.email}</p>
+              </>
+            ) : (
+              <>
+                <div className="h-4 w-24 bg-muted rounded animate-pulse mb-1"></div>
+                <div className="h-3 w-32 bg-muted rounded animate-pulse"></div>
+              </>
+            )}
           </div>
         </button>
       </div>

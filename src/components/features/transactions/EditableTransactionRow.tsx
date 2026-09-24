@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Lock } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { Transaction, Project, Account } from "@/types/transaction";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
@@ -93,12 +93,15 @@ export function EditableTransactionRow({
     try {
       onDirtyChange(trx.id, null);
       await onDelete(trx.id, trx.project_id);
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(e);
-      alert("Gagal menghapus transaksi");
+      const msg = e instanceof Error ? e.message : "Gagal menghapus transaksi";
+      alert(msg);
       setIsDeleting(false);
     }
   };
+
+  const isFundMovement = !!trx.fund_movement_id;
 
   const isIsolated = !!(lockedProjectId && projects.find(p => p.id === Number(lockedProjectId))?.is_isolated_cash);
 
@@ -239,13 +242,22 @@ export function EditableTransactionRow({
           {rowError && (
             <span className="text-[10px] text-rose-600 max-w-[100px] text-right leading-tight">{rowError}</span>
           )}
-          <button
-            onClick={handleDelete}
-            disabled={isDeleting}
-            className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-md transition-colors disabled:opacity-50"
-          >
-            {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-          </button>
+          {isFundMovement ? (
+            <span
+              title="Transaksi ini berasal dari Fund Movement. Batalkan melalui halaman Sumber Modal."
+              className="p-1.5 text-muted-foreground/40 cursor-not-allowed"
+            >
+              <Lock className="w-4 h-4" />
+            </span>
+          ) : (
+            <button
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-md transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+            </button>
+          )}
         </div>
       </td>
     </tr>

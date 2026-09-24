@@ -25,6 +25,13 @@ export const projectService = {
   },
 
   /**
+   * Fetch fund sources breakdown for a project.
+   */
+  async getProjectFundSources(id: number | string): Promise<{ project: Project; fund_sources: { fund_source_id: number; fund_source_name: string; current_amount: number }[] }> {
+    return fetchApi(`/projects/${id}/fund-sources`);
+  },
+
+  /**
    * Create a new project.
    */
   async createProject(data: Omit<Project, 'id' | 'created_at' | 'updated_at'>): Promise<Project> {
